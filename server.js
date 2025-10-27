@@ -5,27 +5,27 @@ import cors from "cors";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ✅ Blogger-only access
+// ✅ Allowed only from your website
 app.use((req, res, next) => {
-  const allowedOrigin = "https://mdabdullahsk.blogspot.com";
+  const allowedOrigin = "https://ryvoxtb.github.io";
   const origin = req.headers.origin || req.headers.referer || "";
 
   if (origin && origin.startsWith(allowedOrigin)) {
     next();
   } else {
-    res.status(403).send("Access denied: Only allowed from your Blogger site.");
+    res.status(403).send("Access denied: Only allowed from your website.");
   }
 });
 
-// ✅ CORS setup
+// ✅ CORS setup for your website
 app.use(cors({
-  origin: "https://mdabdullahsk.blogspot.com",
+  origin: "https://ryvoxtb.github.io",
   methods: ["GET"],
 }));
 
 // ✅ Channel list
 const channels = {
-  tsports: {
+  t_sports: {
     manifest: "https://cdn.bdixtv24.vip/tsports/tracks-v1a1/mono.ts.m3u8",
     base: "https://cdn.bdixtv24.vip/tsports/tracks-v1a1/"
   },
@@ -46,7 +46,7 @@ app.get("/live/:channel", async (req, res) => {
     const response = await axios.get(info.manifest);
     let manifestContent = response.data;
 
-    // Rewrite segment paths to proxy
+    // Rewrite segment URLs to go through our proxy
     const proxySegmentBase = `/segment/${channel}?file=`;
 
     manifestContent = manifestContent.replace(
@@ -68,6 +68,7 @@ app.get("/segment/:channel", async (req, res) => {
   const info = channels[channel];
 
   if (!info) return res.status(404).send("Channel not found.");
+
   const file = req.query.file;
   if (!file) return res.status(400).send("Missing file parameter.");
 
@@ -86,15 +87,16 @@ app.get("/segment/:channel", async (req, res) => {
   }
 });
 
-// ✅ Root page
+// ✅ Root page with available channels
 app.get("/", (req, res) => {
   res.send(`
     <h2>🎥 RyvoxTB Secure Live TV Server</h2>
     <p>Available channels:</p>
     <ul>
-      <li><a href="/live/tsports" target="_blank">T-Sports</a></li>
+      <li><a href="/live/t_sports" target="_blank">T-Sports</a></li>
       <li><a href="/live/boishakhi" target="_blank">Boishakhi TV</a></li>
     </ul>
+    <p>Open these links from your website: <strong>https://ryvoxtb.github.io</strong></p>
   `);
 });
 
