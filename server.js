@@ -5,7 +5,7 @@ import cors from "cors";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ✅ Allowed only from your website
+// ✅ Allow only your GitHub Pages site
 app.use((req, res, next) => {
   const allowedOrigin = "https://ryvoxtb.github.io";
   const origin = req.headers.origin || req.headers.referer || "";
@@ -17,22 +17,25 @@ app.use((req, res, next) => {
   }
 });
 
-// ✅ CORS setup for your website
-app.use(cors({
-  origin: "https://ryvoxtb.github.io",
-  methods: ["GET"],
-}));
+// ✅ CORS setup
+app.use(
+  cors({
+    origin: "https://ryvoxtb.github.io",
+    methods: ["GET"],
+  })
+);
 
 // ✅ Channel list
 const channels = {
   t_sports: {
     manifest: "https://cdn.bdixtv24.vip/tsports/tracks-v1a1/mono.ts.m3u8",
-    base: "https://cdn.bdixtv24.vip/tsports/tracks-v1a1/"
+    base: "https://cdn.bdixtv24.vip/tsports/tracks-v1a1/",
   },
   boishakhi: {
-    manifest: "https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/index.m3u8",
-    base: "https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/"
-  }
+    manifest:
+      "https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/index.m3u8",
+    base: "https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/",
+  },
 };
 
 // ✅ Dynamic manifest route
@@ -46,12 +49,13 @@ app.get("/live/:channel", async (req, res) => {
     const response = await axios.get(info.manifest);
     let manifestContent = response.data;
 
-    // Rewrite segment URLs to go through our proxy
+    // Rewrite segment paths to proxy through this server
     const proxySegmentBase = `/segment/${channel}?file=`;
 
     manifestContent = manifestContent.replace(
       /(#EXTINF:.*?\n)([^#\n].*\.(ts|m4s|aac|mp4))/g,
-      (match, extinf, seg) => `${extinf}${proxySegmentBase}${encodeURIComponent(seg)}`
+      (match, extinf, seg) =>
+        `${extinf}${proxySegmentBase}${encodeURIComponent(seg)}`
     );
 
     res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
@@ -76,7 +80,7 @@ app.get("/segment/:channel", async (req, res) => {
     const response = await axios({
       method: "get",
       url: info.base + file,
-      responseType: "stream"
+      responseType: "stream",
     });
 
     res.setHeader("Content-Type", "video/mp2t");
@@ -87,7 +91,7 @@ app.get("/segment/:channel", async (req, res) => {
   }
 });
 
-// ✅ Root page with available channels
+// ✅ Root route
 app.get("/", (req, res) => {
   res.send(`
     <h2>🎥 RyvoxTB Secure Live TV Server</h2>
@@ -96,10 +100,11 @@ app.get("/", (req, res) => {
       <li><a href="/live/t_sports" target="_blank">T-Sports</a></li>
       <li><a href="/live/boishakhi" target="_blank">Boishakhi TV</a></li>
     </ul>
-    <p>Open these links from your website: <strong>https://ryvoxtb.github.io</strong></p>
+    <p>Access allowed only from: <strong>https://ryvoxtb.github.io</strong></p>
   `);
 });
 
+// ✅ Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
