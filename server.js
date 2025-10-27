@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3000;
 
 // ✅ Blogger-only access
 app.use((req, res, next) => {
-  const allowedOrigin = "https://mdabdullahsk.blogspot.com";
+  const allowedOrigin = "https://askview.free.nf";
   const origin = req.headers.origin || req.headers.referer || "";
 
   if (origin && origin.startsWith(allowedOrigin)) {
@@ -19,7 +19,7 @@ app.use((req, res, next) => {
 
 // ✅ CORS setup
 app.use(cors({
-  origin: "https://mdabdullahsk.blogspot.com",
+  origin: "https://askview.free.nf",
   methods: ["GET"],
 }));
 
