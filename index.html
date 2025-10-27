@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live TV Player (T-Sports Demo)</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script> 
+    
+    <style>
+        body { font-family: sans-serif; text-align: center; background-color: #2c3e50; color: #ecf0f1; margin: 0; padding: 20px; }
+        h1 { color: #2ecc71; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; background-color: #34495e; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+        #videoPlayer { width: 100%; height: auto; background-color: black; border-radius: 8px; margin-bottom: 15px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #e74c3c; color: white; border: none; border-radius: 5px; transition: background-color 0.3s; }
+        button:hover { background-color: #c0392b; }
+        .info { margin-top: 15px; font-size: 1.1em; }
+        .info.loading { color: #f39c12; }
+        .info.success { color: #2ecc71; }
+        .info.error { color: #e74c3c; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>T-Sports Live TV (প্রক্সি সমাধান)</h1>
+        
+        <video id="videoPlayer" controls autoplay></video> 
+        
+        <button id="playButton" onclick="loadStream()">📺 T-Sports TV প্লে করুন</button>
+
+        <p id="status_message" class="info loading">স্ট্রিম লোড করার জন্য 'প্লে করুন' বাটনে ক্লিক করুন।</p>
+    </div>
+
+    <script>
+        const PROXY_URL = "http://localhost:3000/live-tv-proxy"; 
+        
+        const video = document.getElementById('videoPlayer');
+        const statusMessage = document.getElementById('status_message');
+        const playButton = document.getElementById('playButton');
+        
+        // প্রথম লোডের সময়ই স্ট্রিম শুরু করার চেষ্টা করা (Autoplay)
+        window.onload = loadStream; 
+
+        function setStatus(text, className) {
+            statusMessage.textContent = text;
+            statusMessage.className = `info ${className}`;
+        }
+
+        function loadStream() {
+            setStatus('স্ট্রিম লোড হচ্ছে... প্রক্সি ব্যবহার করে।', 'loading');
+            playButton.disabled = true; 
+            
+            // যদি আগে কোনো Hls ইনস্ট্যান্স থাকে, তবে তা নষ্ট করা 
+            if (window.hls) {
+                window.hls.destroy();
+            }
+
+            if (Hls.isSupported()) {
+                const hls = new Hls({
+                    // কম ল্যাটেন্সির জন্য কনফিগারেশন
+                    liveSyncDurationCount: 3, 
+                    liveMaxLatencyDurationCount: 5,
+                });
+                window.hls = hls;
+                
+                hls.loadSource(PROXY_URL);
+                hls.attachMedia(video);
+                
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    video.play()
+                        .then(() => {
+                            setStatus('✅ T-Sports TV চলছে।', 'success');
+                        })
+                        .catch(error => {
+                            // প্লেব্যাক শুরু করতে না পারলে (যেমন: ব্রাউজারের Autoplay পলিসি)
+                            setStatus('⚠️ অটোপ্লে ব্লক হয়েছে। ভিডিও এরিয়া বাটনটিতে ক্লিক করুন।', 'error');
+                            playButton.disabled = false; 
+                        });
+                });
+                
+                hls.on(Hls.Events.ERROR, function (event, data) {
+                    if (data.fatal) {
+                        hls.destroy();
+                        setStatus(`❌ ত্রুটি: চ্যানেল লোড করা যায়নি। প্রক্সি সার্ভার বা স্ট্রিম লিঙ্ক চেক করুন।`, 'error');
+                        console.error('HLS Fatal Error:', data.details, data.response ? data.response.code : '');
+                        playButton.disabled = false;
+                    }
+                });
+
+            } else {
+                // Safari বা iOS-এর জন্য নেটিভ HLS সাপোর্ট ব্যবহার করা 
+                video.src = PROXY_URL;
+                video.addEventListener('loadedmetadata', function() {
+                    video.play();
+                    setStatus('✅ T-Sports TV লোড হয়েছে (Native Support)।', 'success');
+                });
+                video.addEventListener('error', function() {
+                     setStatus('❌ নেটিভ প্লেব্যাক ত্রুটি। স্ট্রিম লিঙ্কটি হয়তো কাজ করছে না।', 'error');
+                     playButton.disabled = false;
+                });
+            }
+        }
+    </script>
+</body>
+</html>
