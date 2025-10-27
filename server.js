@@ -10,7 +10,7 @@ const TARGET_MANIFEST_URL = "https://cdn.bdixtv24.vip/tsports/tracks-v1a1/mono.t
 const TARGET_BASE_URL = "https://cdn.bdixtv24.vip/tsports/tracks-v1a1/";
 
 // ✅ নতুন ALLOWED_ORIGIN শুধুমাত্র তোমার নতুন GitHub Pages
-const ALLOWED_ORIGIN = "https://ryvoxtb.github.io";
+const ALLOWED_ORIGIN = "https://ryvoxtb.github.io/web/t_sports.html";
 
 // ⚙️ কাস্টম CORS সেটআপ
 app.use(
