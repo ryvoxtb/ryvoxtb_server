@@ -26,8 +26,8 @@ app.use(cors({
 
 // 🔹 Generate token API
 app.get("/generate-token", (req, res) => {
-  // Token valid for 10 seconds
-  const token = jwt.sign({ access: "video" }, SECRET_KEY, { expiresIn: "10s" });
+  // Token valid for 60 seconds
+  const token = jwt.sign({ access: "video" }, SECRET_KEY, { expiresIn: "60s" });
   res.json({ token });
 });
 
