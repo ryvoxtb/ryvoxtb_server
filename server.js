@@ -47,11 +47,11 @@ app.get("/live/:channel", async (req, res) => {
     let manifestContent = response.data;
 
     // Rewrite segment paths to proxy
-    const proxySegmentBase = /segment/${channel}?file=;
+    const proxySegmentBase = `/segment/${channel}?file=`;
 
     manifestContent = manifestContent.replace(
       /(#EXTINF:.*?\n)([^#\n].*\.(ts|m4s|aac|mp4))/g,
-      (match, extinf, seg) => ${extinf}${proxySegmentBase}${encodeURIComponent(seg)}
+      (match, extinf, seg) => `${extinf}${proxySegmentBase}${encodeURIComponent(seg)}`
     );
 
     res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
@@ -88,16 +88,16 @@ app.get("/segment/:channel", async (req, res) => {
 
 // ✅ Root page
 app.get("/", (req, res) => {
-  res.send(
+  res.send(`
     <h2>🎥 RyvoxTB Secure Live TV Server</h2>
     <p>Available channels:</p>
     <ul>
       <li><a href="/live/tsports" target="_blank">T-Sports</a></li>
       <li><a href="/live/boishakhi" target="_blank">Boishakhi TV</a></li>
     </ul>
-  );
+  `);
 });
 
 app.listen(PORT, () => {
-  console.log(Server running on port ${PORT});
+  console.log(`Server running on port ${PORT}`);
 });
