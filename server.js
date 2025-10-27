@@ -5,18 +5,16 @@ import cors from "cors";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 🔗 T-Sports stream info
 const TARGET_MANIFEST_URL = "https://cdn.bdixtv24.vip/tsports/tracks-v1a1/mono.ts.m3u8";
 const TARGET_BASE_URL = "https://cdn.bdixtv24.vip/tsports/tracks-v1a1/";
 
-// ✅ নতুন ALLOWED_ORIGIN শুধুমাত্র তোমার নতুন GitHub Pages
-const ALLOWED_ORIGIN = "https://ryvoxtb.github.io/web/t_sports.html";
+// শুধু তোমার GitHub Pages ডোমেইন
+const ALLOWED_ORIGIN = "https://ryvoxtb.github.io/web";
 
-// ⚙️ কাস্টম CORS সেটআপ
+// CORS setup
 app.use(
   cors({
     origin: (origin, callback) => {
-      // GitHub Page ছাড়া অন্য কোনো জায়গা থেকে request এলে ব্লক
       if (!origin || origin.startsWith(ALLOWED_ORIGIN)) {
         callback(null, true);
       } else {
@@ -26,12 +24,12 @@ app.use(
   })
 );
 
-// ✅ মেইন লাইভ রুট
+// Main live route
 app.get("/live/tsports", async (req, res) => {
   try {
-    // নিরাপত্তা: Referrer header চেক
     const ref = req.get("referer") || "";
-    if (!ref.startsWith(`${ALLOWED_ORIGIN}/t_sports.html`)) {
+    // 🔹 শুধুমাত্র domain check
+    if (!ref.includes(ALLOWED_ORIGIN)) {
       return res.status(403).send("❌ Access Forbidden: Not allowed from this domain");
     }
 
@@ -54,13 +52,13 @@ app.get("/live/tsports", async (req, res) => {
   }
 });
 
-// ✅ সেগমেন্ট ফাইল প্রক্সি
+// Segment proxy
 app.get("/live/tsports/segment", async (req, res) => {
   const file = req.query.file;
   if (!file) return res.status(400).send("Missing file parameter");
 
   const ref = req.get("referer") || "";
-  if (!ref.startsWith(`${ALLOWED_ORIGIN}/t_sports.html`)) {
+  if (!ref.includes(ALLOWED_ORIGIN)) {
     return res.status(403).send("❌ Access Forbidden: Not allowed from this domain");
   }
 
@@ -82,7 +80,6 @@ app.get("/live/tsports/segment", async (req, res) => {
   }
 });
 
-// ✅ Root route
 app.get("/", (req, res) => {
   res.send("✅ Secure T-Sports Proxy Server is running successfully!");
 });
