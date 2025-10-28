@@ -15,7 +15,7 @@ const activeTokens = new Map();
 // 🔐 Generate a new short-lived token
 function generateToken(channel) {
   const token = crypto.randomBytes(8).toString("hex");
-  const expires = Date.now() + 10 * 1000; // 10 seconds
+  const expires = Date.now() + 60 * 6000; // 60 seconds
   activeTokens.set(token, { channel, expires });
   return token;
 }
