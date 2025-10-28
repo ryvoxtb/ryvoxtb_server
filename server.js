@@ -38,7 +38,7 @@ const channels = {
     manifest: "https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/index.m3u8",
     base: "https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/"
   },
-  somoy_tv: {
+  somoy: {
     manifest: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/index.m3u8",
     base: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/"
   }
