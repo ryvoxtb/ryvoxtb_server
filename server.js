@@ -7,7 +7,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ✅ Only your domain is allowed
-const allowedOrigin = "https://askview.free.nf";
+const allowedOrigin = "http://ryvox.xo.je";
 
 // ✅ Temporary tokens storage (in-memory)
 const activeTokens = new Map();
