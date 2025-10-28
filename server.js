@@ -12,7 +12,7 @@ const allowedOrigin = "https://askview.free.nf";
 // ✅ Temporary tokens storage (in-memory)
 const activeTokens = new Map();
 
-// Generate a new short-lived token
+// 🔐 Generate a new short-lived token
 function generateToken(channel) {
   const token = crypto.randomBytes(8).toString("hex");
   const expires = Date.now() + 10 * 1000; // 10 seconds
@@ -20,7 +20,7 @@ function generateToken(channel) {
   return token;
 }
 
-// Cleanup expired tokens every 30s
+// 🧹 Cleanup expired tokens every 30s
 setInterval(() => {
   const now = Date.now();
   for (const [token, info] of activeTokens) {
@@ -37,11 +37,11 @@ const channels = {
   boishakhi: {
     manifest: "https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/index.m3u8",
     base: "https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/"
-  },  
-  bangla_tv: {
-  manifest: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/index.m3u8",
-  base: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/"
-}
+  },
+  bangla_tv: { // ✅ নতুন যুক্ত চ্যানেল
+    manifest: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/index.m3u8",
+    base: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/"
+  }
 };
 
 // ✅ Domain Access Protection
@@ -135,8 +135,10 @@ app.get("/", (req, res) => {
     <ul>
       <li><a href="/live/tsports" target="_blank">T-Sports</a></li>
       <li><a href="/live/boishakhi" target="_blank">Boishakhi TV</a></li>
+      <li><a href="/live/bangla_tv" target="_blank">Bangla TV</a></li>
     </ul>
   `);
 });
 
+// ✅ Start server
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
