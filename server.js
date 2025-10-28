@@ -39,7 +39,7 @@ const channels = {
     base: "https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/"
   },
   bangla_tv: { // ✅ নতুন যুক্ত চ্যানেল
-    manifest: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/index.m3u8",
+    manifest: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/1702-audio_113322_eng=113200-video=442000.m3u8",
     base: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/"
   }
 };
