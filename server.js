@@ -1,3 +1,17 @@
+/**
+ * server.js
+ * Secure HLS proxy with signed tokens, IP-bind, replay protection, rate-limit, and header-injection.
+ *
+ * Install:
+ *   npm i express axios cors helmet express-rate-limit
+ *
+ * Environment:
+ *   PORT (optional)
+ *   ALLOWED_ORIGIN (e.g. https://ryvox.xo.je)
+ *   TOKEN_SECRET (strong random secret)
+ *   FORCE_HTTPS (optional "1" to redirect HTTP->HTTPS)
+ */
+
 import express from "express";
 import axios from "axios";
 import cors from "cors";
