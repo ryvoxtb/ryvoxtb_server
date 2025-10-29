@@ -1,228 +1,180 @@
-// server.js
+// ✅ Import dependencies
 import express from "express";
 import axios from "axios";
 import cors from "cors";
 import crypto from "crypto";
 
 const app = express();
+app.set("trust proxy", true); // ✅ Render/Vercel proxy IP fix
 const PORT = process.env.PORT || 3000;
 
-// change to your allowed origin
+// ✅ Allowed domain (change if needed)
 const allowedOrigin = "http://ryvox.xo.je";
 
-// In-memory token store: token -> { channel, expires, ip }
+// ✅ In-memory token store
 const activeTokens = new Map();
 
-// Generate token (IP-bound)
+// ✅ Generate secure IP-bound token
 function generateToken(channel, ip) {
-  const token = crypto.randomBytes(12).toString("hex"); // longer token
-  const expires = Date.now() + 120 * 1000; // 2 minutes
+  const token = crypto.randomBytes(12).toString("hex");
+  const expires = Date.now() + 5 * 60 * 1000; // ⏱️ 5 minutes validity
   activeTokens.set(token, { channel, expires, ip });
   return token;
 }
 
-// Cleanup expired tokens periodically
+// ✅ Clean up expired tokens
 setInterval(() => {
   const now = Date.now();
-  for (const [t, info] of activeTokens.entries()) {
-    if (info.expires < now) activeTokens.delete(t);
+  for (const [t, data] of activeTokens.entries()) {
+    if (data.expires < now) activeTokens.delete(t);
   }
 }, 30000);
 
-// Channel definitions (manifest + optional base for relative segments)
+// ✅ Channel list
 const channels = {
   tsports: {
     manifest: "https://cdn.bdixtv24.vip/tsports/tracks-v1a1/mono.ts.m3u8",
-    base: "https://cdn.bdixtv24.vip/tsports/tracks-v1a1/"
+    base: "https://cdn.bdixtv24.vip/tsports/tracks-v1a1/",
   },
   boishakhi: {
-    manifest: "https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/index.m3u8",
-    base: "https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/"
+    manifest:
+      "https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/index.m3u8",
+    base: "https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/",
   },
   bangla_tv: {
-    manifest: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/1702-audio_113322_eng=113200-video=442000.m3u8",
-    base: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/"
+    manifest:
+      "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/1702-audio_113322_eng=113200-video=442000.m3u8",
+    base: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/",
   },
   anandatv: {
-    manifest: "https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/playlist.m3u8",
-    base: "https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/"
-  }
+    manifest:
+      "https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/playlist.m3u8",
+    base: "https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/",
+  },
 };
 
-// Domain check middleware
-app.use((req, res, next) => {
-  const origin = req.headers.origin || req.headers.referer || "";
-  if (origin && origin.startsWith(allowedOrigin)) return next();
-  // allow token fetches from server itself (optional)
-  if (!origin) return next();
-  return res.status(403).send("Access denied: only allowed from configured origin");
-});
-
-// CORS (so browser can request token / manifest)
-app.use(cors({
-  origin: allowedOrigin,
-  methods: ["GET"]
-}));
-
-// Helper: get client IP (respect x-forwarded-for if behind proxy)
-// NOTE: when behind a reverse proxy, ensure trust proxy is configured
+// ✅ Get client IP (trust proxy enabled)
 function getClientIp(req) {
   const xff = req.headers["x-forwarded-for"];
   if (xff) return xff.split(",")[0].trim();
   return req.socket.remoteAddress;
 }
 
-// Token endpoint (if client wants to request tokens separately)
+// ✅ Allow only specific domain
+app.use((req, res, next) => {
+  const origin = req.headers.origin || req.headers.referer || "";
+  if (!origin || origin.startsWith(allowedOrigin)) return next();
+  res.status(403).send("Access Denied: Only your domain is allowed.");
+});
+
+// ✅ Enable CORS
+app.use(
+  cors({
+    origin: allowedOrigin,
+    methods: ["GET"],
+  })
+);
+
+// ✅ Token generator endpoint (optional)
 app.get("/token/:channel", (req, res) => {
   const { channel } = req.params;
   if (!channels[channel]) return res.status(404).send("Channel not found");
-  const userIP = getClientIp(req);
-  const token = generateToken(channel, userIP);
-  res.json({ token, expiresIn: 120 });
+  const ip = getClientIp(req);
+  const token = generateToken(channel, ip);
+  res.json({ token, expiresIn: 300 });
 });
 
-// Live manifest endpoint - rewrites URIs to absolute proxy URLs with tokens
+// ✅ Live stream manifest proxy
 app.get("/live/:channel", async (req, res) => {
   const { channel } = req.params;
-  const info = channels[channel];
-  if (!info) return res.status(404).send("Channel not found");
+  const ch = channels[channel];
+  if (!ch) return res.status(404).send("Channel not found");
 
   const userIP = getClientIp(req);
 
   try {
-    // fetch manifest as text
-    const response = await axios.get(info.manifest, { responseType: "text", timeout: 10000 });
-    const manifestRaw = response.data;
+    const response = await axios.get(ch.manifest, { responseType: "text" });
+    const lines = response.data.split("\n");
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
 
-    // Break into lines and rewrite non-# lines (URIs)
-    const hostPrefix = `${req.protocol}://${req.get("host")}`;
+    const newLines = lines.map((line) => {
+      if (line.startsWith("#") || line.trim() === "") return line;
 
-    const lines = manifestRaw.split(/\r?\n/);
-    const outLines = lines.map(line => {
-      // keep comments/empty lines as-is
-      if (!line || line.trim().length === 0) return line;
-      if (line.startsWith("#")) return line;
-
-      // line is a URI (could be relative or absolute)
-      // generate a token per requested resource
       const token = generateToken(channel, userIP);
-
-      // encode the original value (so we can reconstruct later)
-      // We will pass the original URI exactly as it was, and segment handler will resolve it
-      const encoded = encodeURIComponent(line);
-
-      // return an absolute proxy URL pointing to /segment/:channel
-      return `${hostPrefix}/segment/${channel}?file=${encoded}&token=${token}`;
+      const encoded = encodeURIComponent(line.trim());
+      return `${baseUrl}/segment/${channel}?file=${encoded}&token=${token}`;
     });
 
-    const manifestOut = outLines.join("\n");
     res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
-    res.send(manifestOut);
-
+    res.send(newLines.join("\n"));
   } catch (err) {
-    console.error("[/live] Error fetching manifest for", channel, err.message || err.toString());
-    res.status(500).send("Error loading manifest");
+    console.error("Manifest error:", err.message);
+    res.status(500).send("Error fetching manifest.");
   }
 });
 
-// Segment proxy endpoint - validates token + ip, resolves target, streams it
+// ✅ Segment proxy
 app.get("/segment/:channel", async (req, res) => {
   const { channel } = req.params;
-  const fileParam = req.query.file;
-  const token = req.query.token;
+  const { file, token } = req.query;
 
   if (!channels[channel]) return res.status(404).send("Channel not found");
-  if (!fileParam || !token) return res.status(400).send("Missing file or token");
+  if (!file || !token) return res.status(400).send("Missing file or token");
 
-  const info = activeTokens.get(token);
-  const userIP = getClientIp(req);
+  const tokenInfo = activeTokens.get(token);
+  const ip = getClientIp(req);
 
-  if (!info || info.channel !== channel || info.expires < Date.now() || info.ip !== userIP) {
+  if (!tokenInfo || tokenInfo.expires < Date.now() || tokenInfo.ip !== ip) {
     return res.status(403).send("Token expired, invalid, or IP mismatch");
   }
 
-  // reconstruct original URI from fileParam
-  let originalUri;
+  // Resolve URL (absolute/relative)
+  let target;
   try {
-    originalUri = decodeURIComponent(fileParam);
-  } catch (e) {
-    originalUri = fileParam;
-  }
-
-  // Determine final target URL:
-  // - if originalUri starts with http or // -> use as absolute (// -> add protocol)
-  // - otherwise resolve relative to channel.base if provided, else to manifest location
-  let targetUrl;
-  try {
-    if (/^\/\//.test(originalUri)) {
-      // protocol-relative
-      targetUrl = `${req.protocol}:${originalUri}`;
-    } else if (/^https?:\/\//i.test(originalUri)) {
-      targetUrl = originalUri;
-    } else {
-      // relative path -> resolve against base if available, else against manifest
-      const channelInfo = channels[channel];
-      const baseStr = channelInfo.base || (channelInfo.manifest ? channelInfo.manifest.replace(/[^\/]+$/,'') : null);
-      if (!baseStr) {
-        return res.status(500).send("Cannot resolve relative segment URL (no base)");
-      }
-      // Use URL constructor to resolve
-      targetUrl = new URL(originalUri, baseStr).href;
-    }
+    const decoded = decodeURIComponent(file);
+    if (/^https?:\/\//i.test(decoded)) target = decoded;
+    else target = new URL(decoded, channels[channel].base).href;
   } catch (err) {
-    console.error("[/segment] URL resolution error:", err.message);
-    return res.status(500).send("URL resolution error");
+    return res.status(500).send("Invalid file path");
   }
 
   try {
-    // stream the target resource
     const upstream = await axios({
-      method: "get",
-      url: targetUrl,
+      url: target,
+      method: "GET",
       responseType: "stream",
       timeout: 20000,
       headers: {
-        // optional: pass a Referer or User-Agent if needed by origin
         Referer: channels[channel].manifest,
-        "User-Agent": req.headers["user-agent"] || "RyvoxTB-Proxy/1.0"
-      }
+        "User-Agent": "RyvoxTB-Proxy/1.0",
+      },
     });
 
-    // Set Content-Type from upstream if present, otherwise default to video/mp2t
-    const ct = upstream.headers["content-type"] || "video/mp2t";
-    res.setHeader("Content-Type", ct);
-
-    // Stream data
+    res.setHeader("Content-Type", upstream.headers["content-type"] || "video/mp2t");
     upstream.data.pipe(res);
-
-    // optional: handle upstream end / errors
-    upstream.data.on("error", err => {
-      console.error("[/segment] upstream stream error:", err.message);
-      try { res.end(); } catch(e) {}
-    });
-
   } catch (err) {
-    console.error("[/segment] error fetching", targetUrl, err.message || err.toString());
-    // Consider returning 502 for upstream errors
+    console.error("Segment error:", err.message);
     res.status(502).send("Segment fetch error");
   }
 });
 
-// Root info page
+// ✅ Home route
 app.get("/", (req, res) => {
   res.send(`
     <h2>🎥 RyvoxTB Secure Live TV Server</h2>
-    <p>Allowed origin: ${allowedOrigin}</p>
-    <p>IP-bound tokens (2 minutes). Proxying manifests & segments.</p>
+    <p>Allowed Origin: ${allowedOrigin}</p>
+    <p>Channels:</p>
     <ul>
-      <li><a href="/live/tsports" target="_blank">T-Sports (manifest)</a></li>
-      <li><a href="/live/boishakhi" target="_blank">Boishakhi (manifest)</a></li>
-      <li><a href="/live/bangla_tv" target="_blank">Bangla TV (manifest)</a></li>
-      <li><a href="/live/anandatv" target="_blank">Ananda TV (manifest)</a></li>
+      <li><a href="/live/tsports" target="_blank">T-Sports</a></li>
+      <li><a href="/live/boishakhi" target="_blank">Boishakhi TV</a></li>
+      <li><a href="/live/bangla_tv" target="_blank">Bangla TV</a></li>
+      <li><a href="/live/anandatv" target="_blank">Ananda TV</a></li>
     </ul>
-    <p>Use the HLS player on your frontend to consume <code>/live/:channel</code>.</p>
+    <p>Tokens are IP-bound and valid for 5 minutes.</p>
   `);
 });
 
-// Start server
-app.listen(PORT, () => console.log(`✅ Secure server running on port ${PORT}`));
+// ✅ Start server
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
+});
