@@ -35,8 +35,20 @@ const channels = {
     base: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/"
   },
   anandatv: {
-    manifest: "https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/playlist.m3u8",
-    base: "https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/"
+    manifest: "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8",
+    base: "https://bitdash-a.akamaihd.net/content/sintel/hls/"
+  },
+  anandatv: {
+    manifest: "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8",
+    base: "https://bitdash-a.akamaihd.net/content/sintel/hls/"
+  },
+  anandatv: {
+    manifest: "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8",
+    base: "https://bitdash-a.akamaihd.net/content/sintel/hls/"
+  },
+  anandatv: {
+    manifest: "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8",
+    base: "https://bitdash-a.akamaihd.net/content/sintel/hls/"
   }
 };
 
