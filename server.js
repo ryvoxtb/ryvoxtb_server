@@ -38,9 +38,9 @@ const channels = {
     manifest: "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8",
     base: "https://bitdash-a.akamaihd.net/content/sintel/hls/"
   },
-  anandatv: {
-    manifest: "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8",
-    base: "https://bitdash-a.akamaihd.net/content/sintel/hls/"
+  sangeet: {
+    manifest: "https://cdn-4.pishow.tv/live/1143/master.m3u8",
+    base: "https://cdn-4.pishow.tv/live/1143/"
   },
   anandatv: {
     manifest: "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8",
