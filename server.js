@@ -12,11 +12,11 @@ const allowedOrigin = "http://ryvox.xo.je";
 // ✅ Temporary tokens storage (in-memory)
 const activeTokens = new Map();
 
-// 🔐 Generate a new short-lived token
-function generateToken(channel) {
+// 🔐 Generate a new short-lived token (IP-bound)
+function generateToken(channel, ip) {
   const token = crypto.randomBytes(8).toString("hex");
-  const expires = Date.now() + 10 * 1000; // 10 seconds
-  activeTokens.set(token, { channel, expires });
+  const expires = Date.now() + 120 * 1000; // 2 minutes
+  activeTokens.set(token, { channel, expires, ip });
   return token;
 }
 
@@ -38,10 +38,14 @@ const channels = {
     manifest: "https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/index.m3u8",
     base: "https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/"
   },
-  bangla_tv: { // ✅ নতুন যুক্ত চ্যানেল
+  bangla_tv: {
     manifest: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/1702-audio_113322_eng=113200-video=442000.m3u8",
     base: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/"
-  }  
+  },
+  anandatv: { // ✅ নতুন যুক্ত চ্যানেল
+    manifest: "https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/playlist.m3u8",
+    base: "https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/"
+  }
 };
 
 // ✅ Domain Access Protection
@@ -50,7 +54,7 @@ app.use((req, res, next) => {
   if (origin.startsWith(allowedOrigin)) {
     next();
   } else {
-    res.status(403).send("Access denied: Only allowed from askview.free.nf.");
+    res.status(403).send("Access denied: Only allowed from ryvox.xo.je");
   }
 });
 
@@ -60,19 +64,21 @@ app.use(cors({
   methods: ["GET"],
 }));
 
-// ✅ Route: Generate token (used by your site)
+// ✅ Route: Generate token
 app.get("/token/:channel", (req, res) => {
   const { channel } = req.params;
+  const userIP = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
   if (!channels[channel]) return res.status(404).send("Channel not found");
 
-  const token = generateToken(channel);
-  res.json({ token, expiresIn: 10 });
+  const token = generateToken(channel, userIP);
+  res.json({ token, expiresIn: 120 });
 });
 
 // ✅ Route: Stream manifest (with token)
 app.get("/live/:channel", async (req, res) => {
   const { channel } = req.params;
   const info = channels[channel];
+  const userIP = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
 
   if (!info) return res.status(404).send("Channel not found");
 
@@ -84,7 +90,7 @@ app.get("/live/:channel", async (req, res) => {
     manifestContent = manifestContent.replace(
       /(#EXTINF:.*?\n)([^#\n].*\.(ts|m4s|aac|mp4))/g,
       (match, extinf, seg) => {
-        const token = generateToken(channel);
+        const token = generateToken(channel, userIP);
         return `${extinf}/segment/${channel}?file=${encodeURIComponent(seg)}&token=${token}`;
       }
     );
@@ -97,18 +103,19 @@ app.get("/live/:channel", async (req, res) => {
   }
 });
 
-// ✅ Route: Segment proxy (with token validation)
+// ✅ Route: Segment proxy (token + IP validation)
 app.get("/segment/:channel", async (req, res) => {
   const { channel } = req.params;
   const file = req.query.file;
   const token = req.query.token;
+  const userIP = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
 
   if (!channels[channel]) return res.status(404).send("Channel not found");
   if (!file || !token) return res.status(400).send("Missing file or token");
 
   const info = activeTokens.get(token);
-  if (!info || info.channel !== channel || info.expires < Date.now()) {
-    return res.status(403).send("Token expired or invalid");
+  if (!info || info.channel !== channel || info.expires < Date.now() || info.ip !== userIP) {
+    return res.status(403).send("Token expired, invalid, or IP mismatch");
   }
 
   try {
@@ -126,19 +133,20 @@ app.get("/segment/:channel", async (req, res) => {
   }
 });
 
-// ✅ Root page
+// ✅ Root page (for info)
 app.get("/", (req, res) => {
   res.send(`
     <h2>🎥 RyvoxTB Secure Live TV Server</h2>
     <p>Allowed domain: ${allowedOrigin}</p>
-    <p>Channels:</p>
+    <p>Secure IP-bound token system (2 min)</p>
     <ul>
       <li><a href="/live/tsports" target="_blank">T-Sports</a></li>
       <li><a href="/live/boishakhi" target="_blank">Boishakhi TV</a></li>
       <li><a href="/live/bangla_tv" target="_blank">Bangla TV</a></li>
+      <li><a href="/live/anandatv" target="_blank">Ananda TV</a></li>
     </ul>
   `);
 });
 
 // ✅ Start server
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Secure server running on port ${PORT}`));
