@@ -46,11 +46,11 @@ const channels = {
       "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/1702-audio_113322_eng=113200-video=442000.m3u8",
     base: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/",
   },
-  anandatv: {
+  channel24bd: {
     manifest:
-      "https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/playlist.m3u8",
-    base: "https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/",
-  },
+      "https://ch24cdn.ncare.live/channel24/ch24office/tracks-v1a1/mono.m3u8",
+    base: "https://ch24cdn.ncare.live/channel24/ch24office/tracks-v1a1/",
+  }
 };
 
 // ✅ Get client IP (trust proxy enabled)
