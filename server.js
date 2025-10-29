@@ -1,87 +1,100 @@
 const express = require('express');
 const axios = require('axios');
-const cors = require('cors'); 
+const cors = require('cors');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// ✅ নতুন ও কার্যকরী T-Sports HLS স্ট্রিম লিঙ্ক (ব্যবহারকারীর দেওয়া লিঙ্ক)
-const TARGET_MANIFEST_URL = 'https://cdn.bdixtv24.vip/tsports/tracks-v1a1/mono.ts.m3u8';
-// ✅ নতুন স্ট্রিম সার্ভারের বেস URL
-const TARGET_BASE_URL = 'https://cdn.bdixtv24.vip/tsports/tracks-v1a1/'; 
+// ✅ চ্যানেলগুলোর তালিকা
+const CHANNELS = {
+  tsports: {
+    manifest: 'https://cdn.bdixtv24.vip/tsports/tracks-v1a1/mono.ts.m3u8',
+    base: 'https://cdn.bdixtv24.vip/tsports/tracks-v1a1/',
+  },
+  gtv: {
+    manifest: 'https://cdn.bdixtv24.vip/gtv/tracks-v1a1/mono.ts.m3u8',
+    base: 'https://cdn.bdixtv24.vip/gtv/tracks-v1a1/',
+  },
+  channeli: {
+    manifest: 'https://cdn.bdixtv24.vip/channeli/tracks-v1a1/mono.ts.m3u8',
+    base: 'https://cdn.bdixtv24.vip/channeli/tracks-v1a1/',
+  },
+};
 
-// সমস্ত অরিজিন থেকে অ্যাক্সেসের অনুমতি দেওয়া
+// ⚙️ Global Middleware
 app.use(cors());
+app.set('etag', false); // ETag disable (reduce overhead)
+app.disable('x-powered-by');
 
-// ১. মেইন ম্যানিফেস্ট ফাইল (.m3u8) লোড ও রিরাইট করার রুট
-app.get('/live-tv-proxy', async (req, res) => {
-    try {
-        const response = await axios.get(TARGET_MANIFEST_URL);
-        let manifestContent = response.data;
-        
-        // Hls.js যাতে সেগমেন্টগুলো প্রক্সি রুট দিয়ে লোড করে, তার জন্য রিরাইট করা হচ্ছে।
-        const PROXY_SEGMENT_BASE = '/live-tv-proxy-segment?segment=';
-        
-        // সমস্ত আপেক্ষিক পাথকে আমাদের নতুন প্রক্সি পাথে পরিবর্তন করা
-        // .ts, .m4s সহ সব ধরণের সেগমেন্ট ফাইল ধরা হচ্ছে
-        manifestContent = manifestContent.replace(
-            /(#EXTINF:.*?\n)([^#\n].*\.(ts|m4s|aac|mp4))/g, 
-            (match, extinf, segmentPath) => {
-                // সেগমেন্ট পাথের সামনে প্রক্সি বেস এবং মূল পাথ যোগ করা
-                return extinf + PROXY_SEGMENT_BASE + encodeURIComponent(segmentPath);
-            }
-        );
-        
-        // যদি মাস্টার ম্যানিফেস্টের ভিতরে অন্য কোনো মেনিফেস্টের লিঙ্ক থাকে, সেগুলোকেও প্রক্সি দিয়ে পরিবর্তন করা
-        manifestContent = manifestContent.replace(
-            /(.*\.m3u8)/g,
-            (match, subManifestPath) => {
-                // এটি সাব-ম্যানিফেস্ট লোড করার জন্য প্রক্সি URL তৈরি করে
-                return PROXY_SEGMENT_BASE + encodeURIComponent(subManifestPath);
-            }
-        );
-
-        // হেডার সেট করা এবং পরিবর্তিত ফাইল ব্রাউজারে পাঠানো
-        res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
-        res.setHeader('Access-Control-Allow-Origin', '*'); 
-        res.send(manifestContent);
-
-    } catch (error) {
-        console.error("❌ ম্যানিফেস্ট লোড এরর:", error.message);
-        const statusCode = error.response ? error.response.status : 'N/A';
-        res.status(500).send(`ম্যানিফেস্ট লোড করতে সমস্যা হয়েছে। (স্ট্যাটাস: ${statusCode})`);
-    }
+// 🏠 Root route
+app.get('/', (req, res) => {
+  const list = Object.keys(CHANNELS)
+    .map(
+      (key) =>
+        `<li><a href="/live/${key}" target="_blank">${key.toUpperCase()} Live</a></li>`
+    )
+    .join('');
+  res.send(`
+    <h2>✅ Your Multi-Channel HLS Proxy Server is Running!</h2>
+    <p>Available Channels:</p>
+    <ul>${list}</ul>
+  `);
 });
 
-// ২. সেগমেন্ট (.ts, .m4s, ইত্যাদি) ফাইল লোড করার রুট
-app.get('/live-tv-proxy-segment', async (req, res) => {
-    const segmentPath = req.query.segment;
-    if (!segmentPath) {
-        return res.status(400).send('সেগমেন্ট পাথ নেই।');
-    }
+// 🎯 Main Proxy Route (for each channel)
+app.get('/live/:channel', async (req, res) => {
+  const channel = req.params.channel.toLowerCase();
+  const ch = CHANNELS[channel];
+  if (!ch) return res.status(404).send('Channel not found.');
 
-    // মূল CDN URL-এর সাথে সেগমেন্ট পাথ যুক্ত করে সম্পূর্ণ URL তৈরি করা
-    const segmentUrl = TARGET_BASE_URL + segmentPath;
-    
-    try {
-        const response = await axios({
-            method: 'get',
-            url: segmentUrl,
-            responseType: 'stream',
-        });
+  try {
+    const response = await axios.get(ch.manifest, { timeout: 5000 });
+    let manifestContent = response.data;
 
-        // বাইনারি ডেটা এবং CORS হেডার ব্রাউজারে ফেরত পাঠানো
-        res.setHeader('Content-Type', 'video/mp2t'); 
-        res.setHeader('Access-Control-Allow-Origin', '*'); 
-        response.data.pipe(res);
+    // সেগমেন্ট পাথ রিরাইট করা
+    const PROXY_SEGMENT_BASE = `/segment/${channel}?file=`;
+    manifestContent = manifestContent.replace(
+      /(#EXTINF:.*?\n)([^#\n].*\.(ts|m4s|aac|mp4))/g,
+      (match, extinf, path) => extinf + PROXY_SEGMENT_BASE + encodeURIComponent(path)
+    );
 
-    } catch (error) {
-        console.error(`❌ সেগমেন্ট লোড এরর (${segmentPath}):`, error.message);
-        res.status(500).send('ভিডিও সেগমেন্ট লোড করতে সমস্যা হয়েছে।');
-    }
+    res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(manifestContent);
+  } catch (err) {
+    console.error(`❌ [${channel}] manifest error:`, err.message);
+    res.status(500).send('Error loading manifest.');
+  }
+});
+
+// 🎬 Segment proxy route
+app.get('/segment/:channel', async (req, res) => {
+  const channel = req.params.channel.toLowerCase();
+  const ch = CHANNELS[channel];
+  if (!ch) return res.status(404).send('Channel not found.');
+
+  const file = req.query.file;
+  if (!file) return res.status(400).send('Segment file missing.');
+
+  const url = ch.base + decodeURIComponent(file);
+  try {
+    const response = await axios({
+      url,
+      method: 'GET',
+      responseType: 'stream',
+      timeout: 8000,
+    });
+
+    res.setHeader('Content-Type', 'video/mp2t');
+    res.setHeader('Cache-Control', 'public, max-age=5');
+    response.data.pipe(res);
+  } catch (err) {
+    console.error(`❌ Segment error [${channel}]`, err.message);
+    res.status(500).end();
+  }
 });
 
 app.listen(PORT, () => {
-    console.log(`✅ প্রক্সি সার্ভার চালু হয়েছে: http://localhost:${PORT}`);
-    console.log(`ওয়েবসাইটে ব্যবহার করার লিঙ্ক: http://localhost:${PORT}/live-tv-proxy`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`Visit http://localhost:${PORT}/`);
 });
