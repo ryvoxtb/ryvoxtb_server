@@ -47,8 +47,8 @@ const channels = {
     base: "https://smart.bengaldigital.live/sun-bangla-paid/tracks-v1a1/"
   },
   anandatv: {
-    manifest: "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8",
-    base: "https://bitdash-a.akamaihd.net/content/sintel/hls/"
+    manifest: "https://tvsen4.aynaott.com/durontotv/tracks-v1a1/mono.ts.m3u8",
+    base: "https://tvsen4.aynaott.com/durontotv/tracks-v1a1/"
   }
 };
 
