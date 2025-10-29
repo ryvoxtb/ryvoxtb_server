@@ -42,9 +42,9 @@ const channels = {
     manifest: "https://cdn-4.pishow.tv/live/1143/master.m3u8",
     base: "https://cdn-4.pishow.tv/live/1143/"
   },
-  anandatv: {
-    manifest: "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8",
-    base: "https://bitdash-a.akamaihd.net/content/sintel/hls/"
+  sun: {
+    manifest: "https://smart.bengaldigital.live/sun-bangla-paid/tracks-v1a1/mono.m3u8",
+    base: "https://smart.bengaldigital.live/sun-bangla-paid/tracks-v1a1/"
   },
   anandatv: {
     manifest: "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8",
