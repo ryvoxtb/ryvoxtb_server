@@ -5,7 +5,7 @@ import cors from "cors";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ✅ শুধুমাত্র এই ডোমেইন থেকে ভিডিও চলবে
+// ✅ শুধুমাত্র তোমার ডোমেইন
 const allowedOrigin = "http://ryvox.xo.je";
 
 // ✅ অনুমোদিত ডোমেইন চেক
@@ -14,53 +14,93 @@ app.use((req, res, next) => {
   if (origin.startsWith(allowedOrigin)) {
     next();
   } else {
-    res.status(403).send("Access Denied: This service is restricted to ryvox.xo.je");
+    res.status(403).send("Access Denied: Only allowed from ryvox.xo.je");
   }
 });
 
-// ✅ CORS সেটআপ
-app.use(cors({
-  origin: allowedOrigin,
-  methods: ["GET"],
-}));
+app.use(cors({ origin: allowedOrigin, methods: ["GET"] }));
 
-// ✅ তোমার চ্যানেল লিস্ট
+// ✅ চ্যানেল তালিকা
 const channels = {
   tsports: {
-    manifest: "https://cdn.bdixtv24.vip/tsports/tracks-v1a1/mono.ts.m3u8"
+    manifest: "https://cdn.bdixtv24.vip/tsports/tracks-v1a1/mono.ts.m3u8",
+    base: "https://cdn.bdixtv24.vip/tsports/tracks-v1a1/"
   },
   boishakhi: {
-    manifest: "https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/index.m3u8"
+    manifest: "https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/index.m3u8",
+    base: "https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/"
   },
   bangla_tv: {
-    manifest: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/1702-audio_113322_eng=113200-video=442000.m3u8"
+    manifest: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/1702-audio_113322_eng=113200-video=442000.m3u8",
+    base: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/"
   },
   anandatv: {
-    manifest: "https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/playlist.m3u8"
+    manifest: "https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/playlist.m3u8",
+    base: "https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/"
   }
 };
 
-// ✅ Channel stream proxy
+// ✅ Manifest proxy route
 app.get("/live/:channel", async (req, res) => {
   const { channel } = req.params;
   const info = channels[channel];
   if (!info) return res.status(404).send("Channel not found");
 
   try {
-    const response = await axios.get(info.manifest);
+    const response = await axios.get(info.manifest, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": allowedOrigin
+      }
+    });
+
+    let manifest = response.data;
+    // Segment path পরিবর্তন করে proxy path বসাও
+    manifest = manifest.replace(
+      /^(?!#)(.*\.(ts|m4s|aac|mp4))/gm,
+      (segment) => `/segment/${channel}?file=${encodeURIComponent(segment)}`
+    );
+
     res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
-    res.send(response.data);
+    res.send(manifest);
   } catch (err) {
-    console.error("Error fetching manifest:", err.message);
-    res.status(500).send("Stream load error.");
+    console.error("Manifest error:", err.message);
+    res.status(500).send("Manifest load error");
+  }
+});
+
+// ✅ Segment proxy route
+app.get("/segment/:channel", async (req, res) => {
+  const { channel } = req.params;
+  const { file } = req.query;
+  const info = channels[channel];
+
+  if (!info || !file) return res.status(400).send("Invalid request");
+
+  try {
+    const response = await axios({
+      url: info.base + file,
+      method: "GET",
+      responseType: "stream",
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": allowedOrigin
+      }
+    });
+
+    res.setHeader("Content-Type", "video/mp2t");
+    response.data.pipe(res);
+  } catch (err) {
+    console.error("Segment error:", err.message);
+    res.status(500).send("Segment load error");
   }
 });
 
 // ✅ Root info
 app.get("/", (req, res) => {
   res.send(`
-    <h2>🎥 RyvoxTB Lightweight Secure TV Server</h2>
-    <p>Only allowed from: ${allowedOrigin}</p>
+    <h2>🎥 RyvoxTB Secure & Fast Proxy Server</h2>
+    <p>Allowed domain: ${allowedOrigin}</p>
     <ul>
       <li><a href="/live/tsports" target="_blank">T-Sports</a></li>
       <li><a href="/live/boishakhi" target="_blank">Boishakhi TV</a></li>
