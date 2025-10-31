@@ -11,13 +11,33 @@ const CHANNELS = {
     manifest: 'https://cdn.bdixtv24.vip/tsports/tracks-v1a1/mono.ts.m3u8',
     base: 'https://cdn.bdixtv24.vip/tsports/tracks-v1a1/',
   },
-  gtv: {
-    manifest: 'https://cdn.bdixtv24.vip/gtv/tracks-v1a1/mono.ts.m3u8',
-    base: 'https://cdn.bdixtv24.vip/gtv/tracks-v1a1/',
+  Sonyaath: {
+    manifest: 'https://live20.bozztv.com/giatvplayout7/giatv-209611/tracks-v1a1/mono.ts.m3u8',
+    base: 'https://live20.bozztv.com/giatvplayout7/giatv-209611/tracks-v1a1/',
   },
-  channeli: {
-    manifest: 'https://cdn.bdixtv24.vip/channeli/tracks-v1a1/mono.ts.m3u8',
-    base: 'https://cdn.bdixtv24.vip/channeli/tracks-v1a1/',
+  etn: {
+    manifest: 'https://ekusheyserver.com/etvlivesn.m3u8',
+    base: 'https://ekusheyserver.com/',
+  },
+  btvhd: {
+    manifest: 'https://www.btvlive.gov.bd/live/37f2df30-3edf-42f3-a2ee-6185002c841c/BD/355ba051-9a60-48aa-adcf-5a6c64da8c5c/index.m3u8',
+    base: 'https://www.btvlive.gov.bd/live/37f2df30-3edf-42f3-a2ee-6185002c841c/BD/355ba051-9a60-48aa-adcf-5a6c64da8c5c/',
+  },
+  boishakhi: {
+    manifest: 'https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/index.m3u8',
+    base: 'https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/',
+  },
+  snggit: {
+    manifest: 'https://cdn-4.pishow.tv/live/1143/master.m3u8',
+    base: 'https://cdn-4.pishow.tv/live/1143/',
+  },
+  sunbangla: {
+    manifest: 'https://smart.bengaldigital.live/sun-bangla-paid/tracks-v1a1/mono.m3u8',
+    base: 'https://smart.bengaldigital.live/sun-bangla-paid/tracks-v1a1/',
+  },
+  sunbangla: {
+    manifest: 'https://live-bangla.akamaized.net/liveabr/playlist.m3u8',
+    base: 'https://live-bangla.akamaized.net/liveabr/',
   },
 };
 
