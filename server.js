@@ -28,8 +28,8 @@ const CHANNELS = {
     base: 'https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/',
   },
   snggit: {
-    manifest: 'https://cdn-4.pishow.tv/live/1143/master.m3u8',
-    base: 'https://cdn-4.pishow.tv/live/1143/',
+    manifest: 'https://ryvoxtb-server.onrender.com/live/1143_1.m3u8',
+    base: 'https://ryvoxtb-server.onrender.com/live/',
   },
   sunbangla: {
     manifest: 'https://smart.bengaldigital.live/sun-bangla-paid/tracks-v1a1/mono.m3u8',
