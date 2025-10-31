@@ -16,8 +16,8 @@ const CHANNELS = {
     base: 'https://live20.bozztv.com/giatvplayout7/giatv-209611/tracks-v1a1/',
   },
   etn: {
-    manifest: 'https://ekusheyserver.com/etvlivesn.m3u8',
-    base: 'https://ekusheyserver.com/',
+    manifest: 'https://ekusheyserver.com/hls-live/livepkgr/_definst_/liveevent/livestream2.m3u8',
+    base: 'https://ekusheyserver.com/hls-live/livepkgr/_definst_/liveevent/',
   },
   btvhd: {
     manifest: 'https://www.btvlive.gov.bd/live/37f2df30-3edf-42f3-a2ee-6185002c841c/BD/355ba051-9a60-48aa-adcf-5a6c64da8c5c/index.m3u8',
