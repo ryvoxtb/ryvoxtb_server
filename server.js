@@ -10,7 +10,7 @@ app.use(cors());
 app.disable('x-powered-by');
 app.set('etag', false);
 
-// 🧩 Channel list
+// 📺 Channel list
 const CHANNELS = {
   tsports: {
     manifest: 'https://cdn.bdixtv24.vip/tsports/tracks-v1a1/mono.m3u8',
@@ -18,102 +18,89 @@ const CHANNELS = {
   durontotv: {
     manifest: 'https://tvsen4.aynaott.com/durontotv/tracks-v1a1/mono.m3u8',
   },
-  boishakhi: {
-    manifest: 'https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/index.m3u8',
-  },
   channel24: {
     manifest: 'https://ch24cdn.ncare.live/channel24/ch24office/index.m3u8',
   },
   atnbangla: {
     manifest: 'https://cd198.anystream.uk:8082/hls/atbla85tv/index.m3u8',
   },
+  boishakhi: {
+    manifest: 'https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/index.m3u8',
+  },
   enter10bangla: {
     manifest: 'https://live-bangla.akamaized.net/liveabr/playlist.m3u8',
   },
-  zeebangla: {
-    manifest: 'http://eb4b8dcf.kablakaka.ru/iptv/WCKQ3HC3UMGVLG/6636/index.m3u8',
-  },
 };
 
-// 🏠 Root
+// 🏠 Home route
 app.get('/', (req, res) => {
   const list = Object.keys(CHANNELS)
-    .map(ch => `<li><a href="/live/${ch}" target="_blank">${ch.toUpperCase()} ▶️</a></li>`)
+    .map(
+      (name) =>
+        `<li><a href="/live/${name}" target="_blank">${name.toUpperCase()} ▶️</a></li>`
+    )
     .join('');
-  res.send(`<h2>📺 Smart HLS Proxy Server (Render Edition)</h2><ul>${list}</ul>`);
+  res.send(`
+    <h2 style="font-family:sans-serif;text-align:center;">📺 Ryvox TV Server</h2>
+    <ul style="font-size:18px;list-style:none;line-height:2;">
+      ${list}
+    </ul>
+  `);
 });
 
-// 🎬 Manifest route
+// 🎬 Manifest fetch and rewrite
 app.get('/live/:channel', async (req, res) => {
   const channel = req.params.channel.toLowerCase();
   const ch = CHANNELS[channel];
-  if (!ch) return res.status(404).send('Channel not found.');
+  if (!ch) return res.status(404).send('Channel not found');
 
   try {
     const { data: manifest } = await axios.get(ch.manifest, {
       timeout: 10000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0',
-        'Referer': ch.manifest,
-        'Origin': 'https://yourwebsite.com',
-        'Accept': '*/*',
-      },
+      headers: { 'User-Agent': 'Mozilla/5.0' },
     });
 
-    // Rewrite all segment and nested m3u8 URLs
     const rewritten = manifest.replace(
-      /(#EXT[^#\n]*\n)([^#\n]+\.(m3u8|ts|aac|mp4|m4s))/g,
-      (match, info, path) => {
-        const absolute = new URL(path, ch.manifest).href;
-        return info + `/segment/${channel}?file=${encodeURIComponent(absolute)}`;
+      /(#EXT[^#\n]*\n)([^#\n]+\.(m3u8|ts|mp4|aac|m4s))/g,
+      (m, info, path) => {
+        const abs = new URL(path, ch.manifest).href;
+        return info + `/segment/${channel}?file=${encodeURIComponent(abs)}`;
       }
     );
 
     res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
-    res.setHeader('Cache-Control', 'no-store');
     res.send(rewritten);
   } catch (err) {
-    console.error(`❌ Manifest Error [${channel}]: ${err.message}`);
-    res.status(500).send('Manifest fetch failed.');
+    console.error(`Manifest error for ${channel}: ${err.message}`);
+    res.status(500).send('Manifest error');
   }
 });
 
-// 🎥 Segment route
+// 🎥 Segment proxy
 app.get('/segment/:channel', async (req, res) => {
   const fileUrl = req.query.file;
-  if (!fileUrl) return res.status(400).send('Missing file param.');
+  if (!fileUrl) return res.status(400).send('Missing file param');
 
   try {
     const response = await axios({
       method: 'GET',
       url: decodeURIComponent(fileUrl),
       responseType: 'stream',
-      timeout: 15000, // একটু বেশি timeout
-      headers: {
-        'User-Agent': 'Mozilla/5.0',
-        'Referer': fileUrl,
-        'Origin': 'https://yourwebsite.com',
-        'Accept': '*/*',
-        'Accept-Encoding': 'identity',
-        'Connection': 'keep-alive',
-      },
+      timeout: 15000,
+      headers: { 'User-Agent': 'Mozilla/5.0' },
     });
 
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cache-Control', 'public, max-age=5, stale-while-revalidate=10');
+    res.setHeader('Cache-Control', 'public, max-age=5');
     res.setHeader('Content-Type', 'video/mp2t');
-
     response.data.pipe(res);
   } catch (err) {
-    console.error(`❌ Segment Error: ${err.message}`);
+    console.error(`Segment error: ${err.message}`);
     res.status(500).end();
   }
 });
 
-// 🟢 Keepalive route (Render free dyno sleep ঠেকাতে)
+// 🟢 Keepalive
 app.get('/ping', (req, res) => res.send('pong'));
 
-// 🚀 Start server
-app.listen(PORT, () => {
-  console.log(`✅ Render Proxy Live: http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
