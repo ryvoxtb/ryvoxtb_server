@@ -15,7 +15,74 @@ const CHANNELS = {
     manifest: 'https://cdn.bdixtv24.vip/tsports/tracks-v1a1/mono.ts.m3u8',
     base: 'https://cdn.bdixtv24.vip/tsports/tracks-v1a1/',
   },
-  // আরও চ্যানেল এখানে যোগ করুন...
+  btv: {
+    manifest: 'https://www.btvlive.gov.bd/live/37f2df30-3edf-42f3-a2ee-6185002c841c/BD/355ba051-9a60-48aa-adcf-5a6c64da8c5c/index.m3u8',
+    base: 'https://www.btvlive.gov.bd/live/37f2df30-3edf-42f3-a2ee-6185002c841c/BD/355ba051-9a60-48aa-adcf-5a6c64da8c5c/',
+  },
+  sony: {
+    manifest: 'https://live20.bozztv.com/giatvplayout7/giatv-209611/tracks-v1a1/mono.ts.m3u8',
+    base: 'https://live20.bozztv.com/giatvplayout7/giatv-209611/tracks-v1a1/',
+  },
+  anandatv: {
+    manifest: 'https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/playlist.m3u8',
+    base: 'https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/',
+  },
+  shonggit: {
+    manifest: 'https://cdn-4.pishow.tv/live/1143/master.m3u8',
+    base: 'https://cdn-4.pishow.tv/live/1143/',
+  },
+  Sun: {
+    manifest: 'https://smart.bengaldigital.live/sun-bangla-paid/tracks-v1a1/mono.m3u8',
+    base: 'https://smart.bengaldigital.live/sun-bangla-paid/tracks-v1a1/',
+  },
+  durontotv: {
+    manifest: 'https://tvsen4.aynaott.com/durontotv/tracks-v1a1/mono.ts.m3u8',
+    base: 'https://tvsen4.aynaott.com/durontotv/tracks-v1a1/',
+  },
+  enter10bangla: {
+    manifest: 'https://live-bangla.akamaized.net/liveabr/playlist.m3u8',
+    base: 'https://live-bangla.akamaized.net/liveabr/',
+  },
+  atnbangla: {
+    manifest: 'https://cd198.anystream.uk:8082/hls/atbla85tv/index.m3u8',
+    base: 'https://cd198.anystream.uk:8082/hls/atbla85tv/',
+  },
+  ekushey: {
+    manifest: 'https://ekusheyserver.com/hls-live/livepkgr/_definst_/liveevent/livestream2.m3u8',
+    base: 'https://ekusheyserver.com/hls-live/livepkgr/_definst_/liveevent/',
+  },
+  banglatv: {
+    manifest: 'https://cdn.ghuddi.live/tvpage/Bangla_TV_BD/playlist.m3u8',
+    base: 'https://cdn.ghuddi.live/tvpage/Bangla_TV_BD/',
+  },
+  somoytv: {
+    manifest: 'https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/index.m3u8',
+    base: 'https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/',
+  },
+  channel24: {
+    manifest: 'https://ch24cdn.ncare.live/channel24/ch24office/index.m3u8',
+    base: 'https://ch24cdn.ncare.live/channel24/ch24office/',
+  },
+  asianatv: {
+    manifest: 'https://mtlivestream.com/hls/asian/ytlive/index.m3u8',
+    base: 'https://mtlivestream.com/hls/asian/ytlive/',
+  },
+  colorsbangla: {
+    manifest: 'https://tvsen3.aynaott.com/u3LkNQ7UHhFX/index.m3u8',
+    base: 'https://tvsen3.aynaott.com/u3LkNQ7UHhFX/',
+  },
+  zeebanglacinema: {
+    manifest: 'https://smart.bengaldigital.live/Zee-Bangla-Cinema/index.m3u8',
+    base: 'https://smart.bengaldigital.live/Zee-Bangla-Cinema/',
+  },
+  zeebangla: {
+    manifest: 'http://eb4b8dcf.kablakaka.ru/iptv/WCKQ3HC3UMGVLG/6636/index.m3u8',
+    base: 'http://eb4b8dcf.kablakaka.ru/iptv/WCKQ3HC3UMGVLG/6636/',
+  },
+  akash8: {
+    manifest: 'https://cdn-4.pishow.tv/live/969/master.m3u8',
+    base: 'https://cdn-4.pishow.tv/live/969/',
+  },
 };
 
 // Global Middleware
