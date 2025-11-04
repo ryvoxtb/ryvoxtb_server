@@ -80,8 +80,8 @@ const CHANNELS = {
     base: 'http://eb4b8dcf.kablakaka.ru/iptv/WCKQ3HC3UMGVLG/6636/',
   },
   akash8: {
-    manifest: 'https://cdn-4.pishow.tv/live/969/master.m3u8',
-    base: 'https://cdn-4.pishow.tv/live/969/',
+    manifest: 'https://ryvoxtb-server.onrender.com/live/969_1.m3u8',
+    base: 'https://ryvoxtb-server.onrender.com/live/',
   },
 };
 
