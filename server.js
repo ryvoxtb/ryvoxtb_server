@@ -1,6 +1,6 @@
 const express = require('express');
 const axios = require('axios');
-const http = require('http'); 
+const http = require('http');
 const https = require('https');
 const url = require('url');
 const path = require('path');
@@ -8,292 +8,250 @@ const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const MANIFEST_TIMEOUT_MS = parseInt(process.env.MANIFEST_TIMEOUT_MS || '20000', 10);
+const SEGMENT_TIMEOUT_MS = parseInt(process.env.SEGMENT_TIMEOUT_MS || '15000', 10);
+const MAX_REDIRECTS = 5;
 
-// চ্যানেল তালিকা: Sony চ্যানেলটি আপনার দেওয়া নতুন ইউআরএল দিয়ে আপডেট করা হলো
+// -----------------------------
+// Channel list (edit as needed)
+// -----------------------------
 const CHANNELS = {
-  boishakhi: {
-    manifest: 'https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/index.m3u8',
-    base: 'https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/',
-  },
   tsports: {
     manifest: 'https://cdn.bdixtv24.vip/tsports/tracks-v1a1/mono.ts.m3u8',
     base: 'https://cdn.bdixtv24.vip/tsports/tracks-v1a1/',
   },
-  btv: {
-    manifest: 'https://www.btvlive.gov.bd/live/37f2df30-3edf-42f3-a2ee-6185002c841c/BD/355ba051-9a60-48aa-adcf-5a6c64da8c5c/index.m3u8',
-    base: 'https://www.btvlive.gov.bd/live/37f2df30-3edf-42f3-a2ee-6185002c841c/BD/355ba051-9a60-48aa-adcf-5a6c64da8c5c/',
-  },
-  // Sony AATH: আপনার দেওয়া কার্যকারী লিংক দিয়ে আপডেট করা হয়েছে
-  sony: { 
-    manifest: 'https://live20.bozztv.com/giatvplayout7/giatv-209611/tracks-v1a1/mono.ts.m3u8',
-    base: 'https://live20.bozztv.com/giatvplayout7/giatv-209611/tracks-v1a1/',
-  },
-  anandatv: {
-    manifest: 'https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/playlist.m3u8',
-    base: 'https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/',
-  },
-  shonggit: {
-    manifest: 'https://cdn-4.pishow.tv/live/1143/master.m3u8',
-    base: 'https://cdn-4.pishow.tv/live/1143/',
-  },
-  Sun: {
-    manifest: 'https://smart.bengaldigital.live/sun-bangla-paid/tracks-v1a1/mono.m3u8',
-    base: 'https://smart.bengaldigital.live/sun-bangla-paid/tracks-v1a1/',
-  },
-  durontotv: {
-    manifest: 'https://tvsen4.aynaott.com/durontotv/tracks-v1a1/mono.ts.m3u8',
-    base: 'https://tvsen4.aynaott.com/durontotv/tracks-v1a1/',
-  },
-  enter10bangla: {
-    manifest: 'https://live-bangla.akamaized.net/liveabr/playlist.m3u8',
-    base: 'https://live-bangla.akamaized.net/liveabr/',
-  },
-  atnbangla: {
-    manifest: 'https://cd198.anystream.uk:8082/hls/atbla85tv/index.m3u8',
-    base: 'https://cd198.anystream.uk:8082/hls/atbla85tv/',
-  },
-  ekushey: {
-    manifest: 'https://ekusheyserver.com/hls-live/livepkgr/_definst_/liveevent/livestream2.m3u8',
-    base: 'https://ekusheyserver.com/hls-live/livepkgr/_definst_/liveevent/',
-  },
-  banglatv: {
-    manifest: 'https://cdn.ghuddi.live/tvpage/Bangla_TV_BD/playlist.m3u8',
-    base: 'https://cdn.ghuddi.live/tvpage/Bangla_TV_BD/',
-  },
-  somoytv: {
-    manifest: 'https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/index.m3u8',
-    base: 'https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/',
-  },
-  channel24: {
-    manifest: 'https://ch24cdn.ncare.live/channel24/ch24office/index.m3u8',
-    base: 'https://ch24cdn.ncare.live/channel24/ch24office/',
-  },
-  asianatv: {
-    manifest: 'https://mtlivestream.com/hls/asian/ytlive/index.m3u8',
-    base: 'https://mtlivestream.com/hls/asian/ytlive/',
-  },
-  colorsbangla: {
-    manifest: 'https://tvsen3.aynaott.com/u3LkNQ7UHhFX/index.m3u8',
-    base: 'https://tvsen3.aynaott.com/u3LkNQ7UHhFX/',
-  },
-  zeebanglacinema: {
-    manifest: 'https://smart.bengaldigital.live/Zee-Bangla-Cinema/index.m3u8',
-    base: 'https://smart.bengaldigital.live/Zee-Bangla-Cinema/',
-  },
-  zeebangla: {
-    manifest: 'http://eb4b8dcf.kablakaka.ru/iptv/WCKQ3HC3UMGVLG/6636/index.m3u8',
-    base: 'http://eb4b8dcf.kablakaka.ru/iptv/WCKQ3HC3UMGVLG/6636/',
-  },
-  akash8: {
-    manifest: 'https://ryvoxtb-server.onrender.com/live/969_1.m3u8',
-    base: 'https://ryvoxtb-server.onrender.com/live/',
-  },
+  // add other channels here (same shape: { manifest, base })
 };
 
+// Short in-memory manifest cache to reduce upstream hits
+// key: manifestUrl, value: { text, expiresAt }
+const manifestCache = new Map();
+const MANIFEST_CACHE_TTL_MS = 5000; // short TTL to avoid stale playlists for live
 
-// Global Middleware
-app.use(cors());
-app.disable('x-powered-by');
-app.set('etag', false); 
-
-// Content-Type ম্যাপিং ফাংশন
-function getContentType(filename) {
-    const ext = path.extname(filename).toLowerCase();
-    switch (ext) {
-        case '.ts':
-            return 'video/mp2t';
-        case '.aac':
-            return 'audio/aac';
-        case '.mp4':
-        case '.m4s':
-            return 'video/mp4';
-        case '.m3u8':
-            return 'application/vnd.apple.mpegurl';
-        case '.vtt':
-            return 'text/vtt';
-        default:
-            return 'application/octet-stream';
-    }
+// -----------------------------
+// Utility helpers
+// -----------------------------
+function getContentType(filePath) {
+  const ext = path.extname(filePath || '').toLowerCase();
+  switch (ext) {
+    case '.ts': return 'video/mp2t';
+    case '.aac': return 'audio/aac';
+    case '.mp4':
+    case '.m4s': return 'video/mp4';
+    case '.m3u8': return 'application/vnd.apple.mpegurl';
+    case '.vtt': return 'text/vtt';
+    default: return 'application/octet-stream';
+  }
 }
 
-// ---
-// 🌐 রুট এবং চ্যানেল তালিকা
-// ---
+function safeResolve(base, relative) {
+  try {
+    // If relative is absolute URL -> returns relative
+    return new URL(relative, base).toString();
+  } catch (e) {
+    // fallback using legacy url.resolve
+    return url.resolve(base, relative);
+  }
+}
 
+// -----------------------------
+// Global middleware
+// -----------------------------
+app.use(cors());
+app.disable('x-powered-by');
+app.set('etag', false);
+
+// Simple health endpoint
+app.get('/health', (req, res) => res.json({ ok: true, ts: Date.now() }));
+
+// Root: list channels
 app.get('/', (req, res) => {
-  const list = Object.keys(CHANNELS)
-    .map((key) => `<li><a href="/live/${key}" target="_blank">${key.toUpperCase()} Live</a></li>`)
-    .join('');
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>HLS Proxy</title>
-        <style>body { font-family: sans-serif; }</style>
-    </head>
-    <body>
-        <h2>📺 Multi-Channel HLS Proxy Server</h2>
-        <p>ভিডিও প্লেয়ারে ব্যবহারের জন্য চ্যানেল লিংকে ক্লিক করুন:</p>
-        <ul>${list}</ul>
-        <p>উদাহরণ: <code>http://localhost:${PORT}/live/tsports</code></p>
-    </body>
-    </html>
-  `);
+  const list = Object.keys(CHANNELS).map((k) => `<li><a href="/live/${k}" target="_blank">${k.toUpperCase()} Live</a></li>`).join('');
+  res.send(`<!doctype html><meta charset="utf-8"><title>HLS Proxy</title><h2>HLS Proxy</h2><ul>${list}</ul>`);
 });
 
-// ---
-// 📄 ম্যানিফেস্ট প্রক্সি (HLS Playlist .m3u8)
-// ---
-
+// -----------------------------
+// Manifest proxy & rewrite
+// -----------------------------
 app.get('/live/:channel', async (req, res) => {
-  const channel = req.params.channel.toLowerCase();
-  const ch = CHANNELS[channel];
+  const channelKey = req.params.channel && req.params.channel.toLowerCase();
+  const ch = CHANNELS[channelKey];
+  if (!ch) return res.status(404).send('Channel not found');
 
-  if (!ch) return res.status(404).send('Channel not found.');
+  const manifestUrl = ch.manifest;
+
+  // serve from short cache if possible
+  const cached = manifestCache.get(manifestUrl);
+  if (cached && cached.expiresAt > Date.now()) {
+    res.set({ 'Content-Type': 'application/vnd.apple.mpegurl', 'Access-Control-Allow-Origin': '*' });
+    return res.send(cached.text);
+  }
 
   try {
-    const { data: manifest } = await axios.get(ch.manifest, { 
-        timeout: 7000,
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Referer': ch.manifest 
-        }
+    const axiosResp = await axios.get(manifestUrl, {
+      timeout: MANIFEST_TIMEOUT_MS,
+      responseType: 'text',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Node HLS Proxy)',
+        'Accept': '*/*',
+        'Referer': manifestUrl,
+        'Origin': new URL(manifestUrl).origin,
+      },
+      maxRedirects: 5,
+      validateStatus: (s) => s >= 200 && s < 400,
     });
 
-    // **সংশোধন:** #EXT-X-STREAM-INF বা #EXTINF এর পরের লাইনের সব পাথ (যা # দিয়ে শুরু হয়নি) রিরাইট করা হচ্ছে।
-    const rewrittenManifest = manifest.replace(
-      // RegEx: #EXT-X-STREAM-INF বা #EXTINF ট্যাগের পরে থাকা যে কোনো URL
-      /(#EXT-X-STREAM-INF[^\n]*\n)(?![#\s])(.*?\.m3u8)/gm, // সাব-ম্যানিফেস্ট URL হ্যান্ডেল করা
-      (match, info, path) => {
-        const finalPath = path.trim().startsWith('http') ? path.trim() : path.trim();
-        return info + `/segment/${channel}?file=${encodeURIComponent(finalPath)}`;
-      }
-    ).replace(
-      // RegEx: সেগমেন্ট ফাইল (.ts, .aac, ইত্যাদি) হ্যান্ডেল করা
-      /((?:#EXTINF|#EXT-X-KEY|#EXT-X-MAP)[^\n]*\n)(?![#\s])(\S*\.(ts|aac|mp4|m4s|vtt|webm))(?!\S)/gm,
-      (match, info, path) => {
-        return info + `/segment/${channel}?file=${encodeURIComponent(path.trim())}`;
-      }
-    );
+    let manifestText = axiosResp.data;
 
-    res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); 
-    res.send(rewrittenManifest);
-    
-  } catch (error) {
-    console.error(`🔴 Error fetching manifest for ${channel}: ${error.message}`);
-    res.status(500).send('Failed to fetch manifest.');
+    // Rewrite: replace sub-playlists and segment references with proxy endpoints
+    // We'll handle two common cases:
+    // 1) #EXT-X-STREAM-INF\n<sub.m3u8>
+    // 2) #EXTINF\n<segment.ts>
+
+    // 1) sub-playlists (variant playlists)
+    manifestText = manifestText.replace(/(#EXT-X-STREAM-INF[^\n]*\n)(?![#\s])([^\n]+)/gm, (m, info, p) => {
+      const resolved = safeResolve(manifestUrl, p.trim());
+      return info + `/segment/${channelKey}?file=` + encodeURIComponent(resolved);
+    });
+
+    // 2) segments and segment-like references
+    manifestText = manifestText.replace(/(#EXTINF[^\n]*\n)(?![#\s])([^\n]+)/gm, (m, info, p) => {
+      const resolved = safeResolve(manifestUrl, p.trim());
+      return info + `/segment/${channelKey}?file=` + encodeURIComponent(resolved);
+    });
+
+    // Also rewrite key/mapping references (#EXT-X-KEY URI=...) and similar
+    manifestText = manifestText.replace(/(URI=")([^\"]+)(")/gm, (m, pre, p, post) => {
+      // if it's a full URL or relative, rewrite to proxy
+      const resolved = safeResolve(manifestUrl, p);
+      return `URI="/segment/${channelKey}?file=` + encodeURIComponent(resolved) + `"`;
+    });
+
+    // Cache briefly
+    manifestCache.set(manifestUrl, { text: manifestText, expiresAt: Date.now() + MANIFEST_CACHE_TTL_MS });
+
+    res.set({ 'Content-Type': 'application/vnd.apple.mpegurl', 'Access-Control-Allow-Origin': '*' });
+    return res.send(manifestText);
+
+  } catch (err) {
+    console.error(`Manifest fetch failed for ${channelKey}:`, err.message || err);
+    return res.status(502).send('Failed to fetch manifest');
   }
 });
 
-// ---
-// 🎥 সেগমেন্ট প্রক্সি ও স্ট্রিমিং (Low Latency / Lightweight) - রিডাইরেক্ট হ্যান্ডলিং সহ
-// ---
+// -----------------------------
+// Segment proxying with redirect handling and Range fallback
+// -----------------------------
 
-function streamSegment(segmentUrl, req, res, channel, redirectCount = 0) {
-    const MAX_REDIRECTS = 5;
+function proxyRequestWithRedirects(segmentUrl, clientReq, clientRes, channelKey, redirectCount = 0, useRange = false) {
+  if (redirectCount > MAX_REDIRECTS) return clientRes.status(500).end();
 
-    if (redirectCount >= MAX_REDIRECTS) {
-        console.error(`🔴 Segment Request Error for ${channel}: Too many redirects`);
-        return res.status(500).end();
+  let parsed;
+  try { parsed = new URL(segmentUrl); } catch (e) {
+    // if not absolute, try using channel base
+    const ch = CHANNELS[channelKey];
+    if (!ch) return clientRes.status(400).send('Invalid segment URL');
+    const resolved = safeResolve(ch.base, segmentUrl);
+    return proxyRequestWithRedirects(resolved, clientReq, clientRes, channelKey, redirectCount, useRange);
+  }
+
+  const isHttps = parsed.protocol === 'https:';
+  const reqModule = isHttps ? https : http;
+
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Node HLS Proxy)',
+    'Accept': '*/*',
+    'Accept-Encoding': 'identity',
+    // prefer using the channel's manifest as referer - some CDNs look for this
+    'Referer': CHANNELS[channelKey] && CHANNELS[channelKey].manifest ? CHANNELS[channelKey].manifest : parsed.origin,
+  };
+
+  if (useRange && clientReq.headers['range']) headers['Range'] = clientReq.headers['range'];
+
+  const options = {
+    hostname: parsed.hostname,
+    port: parsed.port || (isHttps ? 443 : 80),
+    path: parsed.pathname + (parsed.search || ''),
+    method: 'GET',
+    headers,
+  };
+
+  const upstreamReq = reqModule.request(options, (upstreamRes) => {
+    // Redirects
+    if (upstreamRes.statusCode >= 300 && upstreamRes.statusCode < 400 && upstreamRes.headers.location) {
+      const nextUrl = new URL(upstreamRes.headers.location, parsed).toString();
+      console.log(`Redirect for ${segmentUrl} -> ${nextUrl}`);
+      upstreamRes.resume(); // drain
+      return proxyRequestWithRedirects(nextUrl, clientReq, clientRes, channelKey, redirectCount + 1, useRange);
     }
-    
-    const parsedUrl = url.parse(segmentUrl);
-    const isHttps = parsedUrl.protocol === 'https:';
-    const reqModule = isHttps ? https : http;
-    
-    // ডোমেইন বা hostname ছাড়া পাথ থাকলে Base URL ব্যবহার করা
-    if (!parsedUrl.hostname) {
-        const baseUrl = CHANNELS[channel].base;
-        segmentUrl = baseUrl + (parsedUrl.path.startsWith('/') ? parsedUrl.path.substring(1) : parsedUrl.path);
-        return streamSegment(segmentUrl, req, res, channel, redirectCount);
+
+    // 416 Range Not Satisfiable -> retry without Range
+    if (upstreamRes.statusCode === 416 && useRange) {
+      console.warn('Upstream returned 416 for Range; retrying without Range');
+      upstreamRes.resume();
+      return proxyRequestWithRedirects(segmentUrl, clientReq, clientRes, channelKey, redirectCount + 1, false);
     }
-    
-    const options = {
-        hostname: parsedUrl.hostname,
-        port: parsedUrl.port || (isHttps ? 443 : 80),
-        path: parsedUrl.path,
-        method: 'GET',
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Referer': CHANNELS[channel].base,
-            'Accept': '*/*',
-            'Accept-Encoding': 'identity', 
-            ...(req.headers['range'] && { 'Range': req.headers['range'] }),
-        },
+
+    if (upstreamRes.statusCode >= 400) {
+      console.error(`Upstream returned ${upstreamRes.statusCode} for ${segmentUrl}`);
+      clientRes.status(upstreamRes.statusCode).end();
+      return;
+    }
+
+    // prepare headers to client
+    const contentType = upstreamRes.headers['content-type'] || getContentType(parsed.pathname);
+
+    const headersToSend = {
+      'Content-Type': contentType,
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'public, max-age=5',
     };
+    if (upstreamRes.headers['content-length']) headersToSend['Content-Length'] = upstreamRes.headers['content-length'];
+    if (upstreamRes.headers['content-range']) headersToSend['Content-Range'] = upstreamRes.headers['content-range'];
+    if (upstreamRes.headers['etag']) headersToSend['ETag'] = upstreamRes.headers['etag'];
 
-    const proxyReq = reqModule.request(options, (proxyRes) => {
-        
-        // **রিডাইরেক্ট হ্যান্ডলিং** (3xx স্ট্যাটাস কোড)
-        if (proxyRes.statusCode >= 300 && proxyRes.statusCode < 400 && proxyRes.headers.location) {
-            const newUrl = url.resolve(segmentUrl, proxyRes.headers.location);
-            console.log(`➡️ Segment Redirect for ${channel} (${proxyRes.statusCode}): to ${newUrl}`);
-            return streamSegment(newUrl, req, res, channel, redirectCount + 1);
-        }
-        
-        // 4xx বা 5xx ত্রুটি হলে
-        if (proxyRes.statusCode >= 400) {
-            console.error(`❌ Segment Load Failed for ${channel}: ${proxyRes.statusCode} ${segmentUrl}`);
-            return res.status(proxyRes.statusCode).end();
-        }
+    clientRes.writeHead(upstreamRes.statusCode, headersToSend);
+    upstreamRes.pipe(clientRes);
+  });
 
-        // ক্লায়েন্টকে হেডার সেট করা
-        res.status(proxyRes.statusCode);
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Cache-Control', 'public, max-age=10, stale-while-revalidate=5');
-        
-        // **সঠিক কন্টেন্ট-টাইপ সেট করা**
-        const contentType = proxyRes.headers['content-type'] || getContentType(parsedUrl.pathname);
-        res.setHeader('Content-Type', contentType);
-        
-        // অন্যান্য প্রয়োজনীয় হেডারগুলো পাস করা
-        if (proxyRes.headers['content-length']) {
-            res.setHeader('Content-Length', proxyRes.headers['content-length']);
-        }
-        if (proxyRes.headers['content-range']) {
-            res.setHeader('Content-Range', proxyRes.headers['content-range']);
-        }
-        
-        proxyRes.pipe(res);
-    });
+  upstreamReq.setTimeout(SEGMENT_TIMEOUT_MS, () => {
+    upstreamReq.destroy();
+    clientRes.status(504).end();
+  });
 
-    proxyReq.setTimeout(10000, () => {
-        proxyReq.destroy();
-        console.error(`🔴 Segment Request Timeout for ${channel}: ${segmentUrl}`);
-        res.status(504).end(); 
-    });
+  upstreamReq.on('error', (e) => {
+    console.error('Upstream request error:', e.message || e);
+    clientRes.status(502).end();
+  });
 
-    proxyReq.on('error', (e) => {
-        console.error(`🔴 Segment Request Error for ${channel}: ${e.message}`);
-        res.status(500).end();
-    });
-
-    proxyReq.end();
+  upstreamReq.end();
 }
 
-
 app.get('/segment/:channel', (req, res) => {
-  const channel = req.params.channel.toLowerCase();
-  const ch = CHANNELS[channel];
-
-  if (!ch) return res.status(404).send('Channel not found.');
+  const channelKey = (req.params.channel || '').toLowerCase();
+  const ch = CHANNELS[channelKey];
+  if (!ch) return res.status(404).send('Channel not found');
 
   const file = req.query.file;
-  if (!file) return res.status(400).send('Segment file missing.');
+  if (!file) return res.status(400).send('Missing file param');
 
-  const decodedFile = decodeURIComponent(file);
-  const segmentUrl = decodedFile.startsWith('http') ? decodedFile : ch.base + decodedFile;
+  const decoded = decodeURIComponent(file);
+  // If file is a relative path, safeResolve will prepend base
+  const resolved = decoded.startsWith('http') ? decoded : safeResolve(ch.base, decoded);
 
-  streamSegment(segmentUrl, req, res, channel);
+  // Try with Range header if client sent one, otherwise without Range
+  const useRange = !!req.headers['range'];
+  proxyRequestWithRedirects(resolved, req, res, channelKey, 0, useRange);
 });
 
-// ---
-// 🚀 সার্ভার চালু করা
-// ---
+// -----------------------------
+// Graceful shutdown
+// -----------------------------
+const server = app.listen(PORT, () => console.log(`🚀 HLS Proxy listening on http://localhost:${PORT}`));
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server started at http://localhost:${PORT}`);
-});
+function shutdown() {
+  console.log('Shutting down...');
+  server.close(() => process.exit(0));
+}
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
