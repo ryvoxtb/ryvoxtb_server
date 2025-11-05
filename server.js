@@ -3,12 +3,13 @@ const axios = require('axios');
 const http = require('http'); 
 const https = require('https');
 const url = require('url');
+const path = require('path');
 const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// চ্যানেল তালিকা
+// চ্যানেল তালিকা: Sony চ্যানেলটি আপনার দেওয়া নতুন ইউআরএল দিয়ে আপডেট করা হলো
 const CHANNELS = {
   boishakhi: {
     manifest: 'https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/index.m3u8',
@@ -22,7 +23,8 @@ const CHANNELS = {
     manifest: 'https://www.btvlive.gov.bd/live/37f2df30-3edf-42f3-a2ee-6185002c841c/BD/355ba051-9a60-48aa-adcf-5a6c64da8c5c/index.m3u8',
     base: 'https://www.btvlive.gov.bd/live/37f2df30-3edf-42f3-a2ee-6185002c841c/BD/355ba051-9a60-48aa-adcf-5a6c64da8c5c/',
   },
-  sony: {
+  // Sony AATH: আপনার দেওয়া কার্যকারী লিংক দিয়ে আপডেট করা হয়েছে
+  sony: { 
     manifest: 'https://live20.bozztv.com/giatvplayout7/giatv-209611/tracks-v1a1/mono.ts.m3u8',
     base: 'https://live20.bozztv.com/giatvplayout7/giatv-209611/tracks-v1a1/',
   },
@@ -94,6 +96,26 @@ app.use(cors());
 app.disable('x-powered-by');
 app.set('etag', false); 
 
+// Content-Type ম্যাপিং ফাংশন
+function getContentType(filename) {
+    const ext = path.extname(filename).toLowerCase();
+    switch (ext) {
+        case '.ts':
+            return 'video/mp2t';
+        case '.aac':
+            return 'audio/aac';
+        case '.mp4':
+        case '.m4s':
+            return 'video/mp4';
+        case '.m3u8':
+            return 'application/vnd.apple.mpegurl';
+        case '.vtt':
+            return 'text/vtt';
+        default:
+            return 'application/octet-stream';
+    }
+}
+
 // ---
 // 🌐 রুট এবং চ্যানেল তালিকা
 // ---
@@ -140,13 +162,19 @@ app.get('/live/:channel', async (req, res) => {
         }
     });
 
+    // **সংশোধন:** #EXT-X-STREAM-INF বা #EXTINF এর পরের লাইনের সব পাথ (যা # দিয়ে শুরু হয়নি) রিরাইট করা হচ্ছে।
     const rewrittenManifest = manifest.replace(
-      // রেগুলার এক্সপ্রেশন: HLS মিডিয়া ফাইল বা সাব-ম্যানিফেস্ট URL
-      /((?:#EXTINF|#EXT-X-KEY|#EXT-X-MAP|#EXT-X-STREAM-INF)[^\n]*\n)(?![#\s])(.*?\.m3u8|\S*\.(ts|aac|mp4|m4s|vtt|webm))(?!\S)/gm,
+      // RegEx: #EXT-X-STREAM-INF বা #EXTINF ট্যাগের পরে থাকা যে কোনো URL
+      /(#EXT-X-STREAM-INF[^\n]*\n)(?![#\s])(.*?\.m3u8)/gm, // সাব-ম্যানিফেস্ট URL হ্যান্ডেল করা
       (match, info, path) => {
         const finalPath = path.trim().startsWith('http') ? path.trim() : path.trim();
-        
         return info + `/segment/${channel}?file=${encodeURIComponent(finalPath)}`;
+      }
+    ).replace(
+      // RegEx: সেগমেন্ট ফাইল (.ts, .aac, ইত্যাদি) হ্যান্ডেল করা
+      /((?:#EXTINF|#EXT-X-KEY|#EXT-X-MAP)[^\n]*\n)(?![#\s])(\S*\.(ts|aac|mp4|m4s|vtt|webm))(?!\S)/gm,
+      (match, info, path) => {
+        return info + `/segment/${channel}?file=${encodeURIComponent(path.trim())}`;
       }
     );
 
@@ -164,17 +192,6 @@ app.get('/live/:channel', async (req, res) => {
 // 🎥 সেগমেন্ট প্রক্সি ও স্ট্রিমিং (Low Latency / Lightweight) - রিডাইরেক্ট হ্যান্ডলিং সহ
 // ---
 
-// Content-Type ম্যাপিং ফাংশন
-function getContentType(filename) {
-    if (filename.endsWith('.ts')) return 'video/mp2t';
-    if (filename.endsWith('.aac')) return 'audio/aac';
-    if (filename.endsWith('.mp4') || filename.endsWith('.m4s')) return 'video/mp4';
-    if (filename.endsWith('.m3u8')) return 'application/vnd.apple.mpegurl';
-    if (filename.endsWith('.vtt')) return 'text/vtt';
-    return 'application/octet-stream'; // ডিফল্ট
-}
-
-
 function streamSegment(segmentUrl, req, res, channel, redirectCount = 0) {
     const MAX_REDIRECTS = 5;
 
@@ -186,6 +203,13 @@ function streamSegment(segmentUrl, req, res, channel, redirectCount = 0) {
     const parsedUrl = url.parse(segmentUrl);
     const isHttps = parsedUrl.protocol === 'https:';
     const reqModule = isHttps ? https : http;
+    
+    // ডোমেইন বা hostname ছাড়া পাথ থাকলে Base URL ব্যবহার করা
+    if (!parsedUrl.hostname) {
+        const baseUrl = CHANNELS[channel].base;
+        segmentUrl = baseUrl + (parsedUrl.path.startsWith('/') ? parsedUrl.path.substring(1) : parsedUrl.path);
+        return streamSegment(segmentUrl, req, res, channel, redirectCount);
+    }
     
     const options = {
         hostname: parsedUrl.hostname,
@@ -203,11 +227,17 @@ function streamSegment(segmentUrl, req, res, channel, redirectCount = 0) {
 
     const proxyReq = reqModule.request(options, (proxyRes) => {
         
-        // **রিডাইরেক্ট হ্যান্ডলিং** (যদি মূল সার্ভার Location হেডার পাঠায়)
+        // **রিডাইরেক্ট হ্যান্ডলিং** (3xx স্ট্যাটাস কোড)
         if (proxyRes.statusCode >= 300 && proxyRes.statusCode < 400 && proxyRes.headers.location) {
             const newUrl = url.resolve(segmentUrl, proxyRes.headers.location);
-            console.log(`➡️ Segment Redirect for ${channel}: to ${newUrl}`);
+            console.log(`➡️ Segment Redirect for ${channel} (${proxyRes.statusCode}): to ${newUrl}`);
             return streamSegment(newUrl, req, res, channel, redirectCount + 1);
+        }
+        
+        // 4xx বা 5xx ত্রুটি হলে
+        if (proxyRes.statusCode >= 400) {
+            console.error(`❌ Segment Load Failed for ${channel}: ${proxyRes.statusCode} ${segmentUrl}`);
+            return res.status(proxyRes.statusCode).end();
         }
 
         // ক্লায়েন্টকে হেডার সেট করা
@@ -227,7 +257,6 @@ function streamSegment(segmentUrl, req, res, channel, redirectCount = 0) {
             res.setHeader('Content-Range', proxyRes.headers['content-range']);
         }
         
-        // ডেটা স্ট্রিম হিসেবে ক্লায়েন্টকে পাঠানো
         proxyRes.pipe(res);
     });
 
