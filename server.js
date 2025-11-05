@@ -1,14 +1,14 @@
 const express = require('express');
 const axios = require('axios');
-const http = require('http'); // HTTP requests এর জন্য
-const https = require('https'); // HTTPS requests এর জন্য
-const url = require('url'); // URL হ্যান্ডলিং এর জন্য
+const http = require('http'); 
+const https = require('https');
+const url = require('url');
 const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// চ্যানেল তালিকা (নাম ছোট হাতেও হতে হবে)
+// চ্যানেল তালিকা
 const CHANNELS = {
   boishakhi: {
     manifest: 'https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/index.m3u8',
@@ -92,13 +92,12 @@ const CHANNELS = {
 // Global Middleware
 app.use(cors());
 app.disable('x-powered-by');
-app.set('etag', false); // সার্ভারকে হালকা রাখতে ETag ডিসেবল করা হলো
+app.set('etag', false); 
 
 // ---
 // 🌐 রুট এবং চ্যানেল তালিকা
 // ---
 
-// Root route - চ্যানেল লিস্ট দেখাবে
 app.get('/', (req, res) => {
   const list = Object.keys(CHANNELS)
     .map((key) => `<li><a href="/live/${key}" target="_blank">${key.toUpperCase()} Live</a></li>`)
@@ -133,43 +132,119 @@ app.get('/live/:channel', async (req, res) => {
   if (!ch) return res.status(404).send('Channel not found.');
 
   try {
-    // ম্যানিফেস্ট ফাইল fetch করা
     const { data: manifest } = await axios.get(ch.manifest, { 
         timeout: 7000,
         headers: {
-            // User-Agent এবং Referer সেট করা
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             'Referer': ch.manifest 
         }
     });
 
-    // ম্যানিফেস্টে segment path রিরাইট করা
     const rewrittenManifest = manifest.replace(
-      // রেগুলার এক্সপ্রেশন: #EXTINF বা অন্য কোনো ট্যাগের পরের লাইন, যা # দিয়ে শুরু হয়নি
+      // রেগুলার এক্সপ্রেশন: HLS মিডিয়া ফাইল বা সাব-ম্যানিফেস্ট URL
       /((?:#EXTINF|#EXT-X-KEY|#EXT-X-MAP|#EXT-X-STREAM-INF)[^\n]*\n)(?![#\s])(.*?\.m3u8|\S*\.(ts|aac|mp4|m4s|vtt|webm))(?!\S)/gm,
       (match, info, path) => {
         const finalPath = path.trim().startsWith('http') ? path.trim() : path.trim();
         
-        // সেগমেন্ট প্রক্সি URL তৈরি করা
         return info + `/segment/${channel}?file=${encodeURIComponent(finalPath)}`;
       }
     );
 
-    // হেডার সেট করা
     res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); 
     res.send(rewrittenManifest);
     
   } catch (error) {
-    // টেমপ্লেট স্ট্রিং এর মাধ্যমে সঠিক এরর লোগিং
     console.error(`🔴 Error fetching manifest for ${channel}: ${error.message}`);
     res.status(500).send('Failed to fetch manifest.');
   }
 });
 
 // ---
-// 🎥 সেগমেন্ট প্রক্সি ও স্ট্রিমিং (Low Latency / Lightweight)
+// 🎥 সেগমেন্ট প্রক্সি ও স্ট্রিমিং (Low Latency / Lightweight) - রিডাইরেক্ট হ্যান্ডলিং সহ
 // ---
+
+// Content-Type ম্যাপিং ফাংশন
+function getContentType(filename) {
+    if (filename.endsWith('.ts')) return 'video/mp2t';
+    if (filename.endsWith('.aac')) return 'audio/aac';
+    if (filename.endsWith('.mp4') || filename.endsWith('.m4s')) return 'video/mp4';
+    if (filename.endsWith('.m3u8')) return 'application/vnd.apple.mpegurl';
+    if (filename.endsWith('.vtt')) return 'text/vtt';
+    return 'application/octet-stream'; // ডিফল্ট
+}
+
+
+function streamSegment(segmentUrl, req, res, channel, redirectCount = 0) {
+    const MAX_REDIRECTS = 5;
+
+    if (redirectCount >= MAX_REDIRECTS) {
+        console.error(`🔴 Segment Request Error for ${channel}: Too many redirects`);
+        return res.status(500).end();
+    }
+    
+    const parsedUrl = url.parse(segmentUrl);
+    const isHttps = parsedUrl.protocol === 'https:';
+    const reqModule = isHttps ? https : http;
+    
+    const options = {
+        hostname: parsedUrl.hostname,
+        port: parsedUrl.port || (isHttps ? 443 : 80),
+        path: parsedUrl.path,
+        method: 'GET',
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Referer': CHANNELS[channel].base,
+            'Accept': '*/*',
+            'Accept-Encoding': 'identity', 
+            ...(req.headers['range'] && { 'Range': req.headers['range'] }),
+        },
+    };
+
+    const proxyReq = reqModule.request(options, (proxyRes) => {
+        
+        // **রিডাইরেক্ট হ্যান্ডলিং** (যদি মূল সার্ভার Location হেডার পাঠায়)
+        if (proxyRes.statusCode >= 300 && proxyRes.statusCode < 400 && proxyRes.headers.location) {
+            const newUrl = url.resolve(segmentUrl, proxyRes.headers.location);
+            console.log(`➡️ Segment Redirect for ${channel}: to ${newUrl}`);
+            return streamSegment(newUrl, req, res, channel, redirectCount + 1);
+        }
+
+        // ক্লায়েন্টকে হেডার সেট করা
+        res.status(proxyRes.statusCode);
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Cache-Control', 'public, max-age=10, stale-while-revalidate=5');
+        
+        // **সঠিক কন্টেন্ট-টাইপ সেট করা**
+        const contentType = proxyRes.headers['content-type'] || getContentType(parsedUrl.pathname);
+        res.setHeader('Content-Type', contentType);
+        
+        // অন্যান্য প্রয়োজনীয় হেডারগুলো পাস করা
+        if (proxyRes.headers['content-length']) {
+            res.setHeader('Content-Length', proxyRes.headers['content-length']);
+        }
+        if (proxyRes.headers['content-range']) {
+            res.setHeader('Content-Range', proxyRes.headers['content-range']);
+        }
+        
+        // ডেটা স্ট্রিম হিসেবে ক্লায়েন্টকে পাঠানো
+        proxyRes.pipe(res);
+    });
+
+    proxyReq.setTimeout(10000, () => {
+        proxyReq.destroy();
+        console.error(`🔴 Segment Request Timeout for ${channel}: ${segmentUrl}`);
+        res.status(504).end(); 
+    });
+
+    proxyReq.on('error', (e) => {
+        console.error(`🔴 Segment Request Error for ${channel}: ${e.message}`);
+        res.status(500).end();
+    });
+
+    proxyReq.end();
+}
+
 
 app.get('/segment/:channel', (req, res) => {
   const channel = req.params.channel.toLowerCase();
@@ -180,73 +255,10 @@ app.get('/segment/:channel', (req, res) => {
   const file = req.query.file;
   if (!file) return res.status(400).send('Segment file missing.');
 
-  // সম্পূর্ণ URL তৈরি করা
   const decodedFile = decodeURIComponent(file);
   const segmentUrl = decodedFile.startsWith('http') ? decodedFile : ch.base + decodedFile;
-  
-  const parsedUrl = url.parse(segmentUrl);
-  const isHttps = parsedUrl.protocol === 'https:';
-  
-  // HTTP বা HTTPS মডিউল নির্বাচন
-  const reqModule = isHttps ? https : http;
 
-  // ফরোয়ার্ডিং রিকোয়েস্টের অপশনস
-  const options = {
-    hostname: parsedUrl.hostname,
-    port: parsedUrl.port || (isHttps ? 443 : 80),
-    path: parsedUrl.path,
-    method: 'GET',
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-      'Referer': ch.base,
-      'Accept': '*/*',
-      'Accept-Encoding': 'identity', 
-      ...(req.headers['range'] && { 'Range': req.headers['range'] }), // Seek/Jump এর জন্য Range হেডার পাস করা
-    },
-  };
-
-  // রিকোয়েস্ট তৈরি করা এবং স্ট্রিমিং শুরু করা
-  const proxyReq = reqModule.request(options, (proxyRes) => {
-    
-    // হেডার সেট করা
-    if (proxyRes.headers['content-type']) {
-        res.setHeader('Content-Type', proxyRes.headers['content-type']);
-    } else {
-        res.setHeader('Content-Type', 'video/mp2t'); 
-    }
-    
-    // দ্রুত ক্যাশিং এর জন্য হেডার সেট করা (ভিডিও স্মুথ রাখতে)
-    res.setHeader('Cache-Control', 'public, max-age=10, stale-while-revalidate=5');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    
-    // Content-Length এবং Content-Range হেডারগুলো পাস করা
-    if (proxyRes.headers['content-length']) {
-        res.setHeader('Content-Length', proxyRes.headers['content-length']);
-    }
-    if (proxyRes.headers['content-range']) {
-        res.setHeader('Content-Range', proxyRes.headers['content-range']);
-    }
-    
-    res.status(proxyRes.statusCode);
-
-    // ডেটা স্ট্রিম হিসেবে সরাসরি ক্লায়েন্টকে পাঠানো
-    proxyRes.pipe(res);
-  });
-
-  // রিকোয়েস্ট টাইমআউট সেট করা
-  proxyReq.setTimeout(10000, () => {
-    proxyReq.destroy();
-    console.error(`🔴 Segment Request Timeout for ${channel}: ${segmentUrl}`);
-    res.status(504).end(); 
-  });
-
-  // ত্রুটি পরিচালনা
-  proxyReq.on('error', (e) => {
-    console.error(`🔴 Segment Request Error for ${channel}: ${e.message}`);
-    res.status(500).end();
-  });
-
-  proxyReq.end(); // রিকোয়েস্টটি শেষ করা হচ্ছে
+  streamSegment(segmentUrl, req, res, channel);
 });
 
 // ---
