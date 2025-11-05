@@ -16,9 +16,9 @@ const MAX_REDIRECTS = 5;
 // Channel list (edit as needed)
 // -----------------------------
 const CHANNELS = {
-  tsports: {
-    manifest: 'https://cdn.bdixtv24.vip/tsports/tracks-v1a1/mono.ts.m3u8',
-    base: 'https://cdn.bdixtv24.vip/tsports/tracks-v1a1/',
+  anandatv: {
+    manifest: 'https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/playlist.m3u8',
+    base: 'https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/',
   },
   // add other channels here (same shape: { manifest, base })
 };
