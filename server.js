@@ -7,26 +7,26 @@ const PORT = 3000;
 
 // ✅ মাল্টিপল চ্যানেল কনফিগারেশন
 const CHANNELS = {
-  'ananda-tv': {
-    name: 'Ananda TV',
-    manifest:
-      'https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/playlist.m3u8',
-    base:
-      'https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/',
-  },
-  't-sports': {
-    name: 'T Sports',
-    manifest:
-      'https://smart.bengaldigital.live/sun-bangla-paid/tracks-v1a1/mono.m3u8',
-    base:
-      'https://smart.bengaldigital.live/sun-bangla-paid/tracks-v1a1/',
-  },
-  // ✅ নতুন চ্যানেল এখানে যুক্ত করো
-  // 'channel-i': {
-  //   name: 'Channel i',
-  //   manifest: 'https://example.com/channeli/playlist.m3u8',
-  //   base: 'https://example.com/channeli/',
-  // },
+  "btv": { name: "BTV", url: "https://www.btvlive.gov.bd/live/37f2df30-3edf-42f3-a2ee-6185002c841c/BD/355ba051-9a60-48aa-adcf-5a6c64da8c5c/index.m3u8" },
+  "boishakhi-tv": { name: "Boishakhi TV", url: "https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/index.m3u8" },
+  "t-sports": { name: "T Sports", url: "https://cdn.bdixtv24.vip/tsports/tracks-v1a1/mono.ts.m3u8" },
+  "sony-aath": { name: "Sony AATH", url: "https://live20.bozztv.com/giatvplayout7/giatv-209611/tracks-v1a1/mono.ts.m3u8" },
+  "ananda-tv": { name: "Ananda TV", url: "https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/playlist.m3u8" },
+  "deepto-tv": { name: "Deepto TV", url: "https://byphdgllyk.gpcdn.net/hls/deeptotv/0_1/index.m3u8?sessId=76637" },
+  "shonggit-bangla": { name: "Shonggit Bangla", url: "https://cdn-4.pishow.tv/live/1143/master.m3u8" },
+  "sun-bangla": { name: "Sun Bangla", url: "https://smart.bengaldigital.live/sun-bangla-paid/tracks-v1a1/mono.m3u8" },
+  "duronto": { name: "Duronto TV", url: "https://tvsen4.aynaott.com/durontotv/tracks-v1a1/mono.ts.m3u8" },
+  "enter10-bangla": { name: "Enter10 Bangla", url: "https://live-bangla.akamaized.net/liveabr/playlist.m3u8" },
+  "atn-bangla": { name: "ATN Bangla", url: "https://cd198.anystream.uk:8082/hls/atbla85tv/index.m3u8" },
+  "ekushey-tv": { name: "Ekushey TV", url: "https://ekusheyserver.com/hls-live/livepkgr/_definst_/liveevent/livestream2.m3u8" },
+  "bangla-tv": { name: "Bangla TV", url: "https://cdn.ghuddi.live/tvpage/Bangla_TV_BD/playlist.m3u8" },
+  "somoy-tv": { name: "Somoy TV", url: "https://owrcovcrpy.gpcdn.net/bpk-tv/1702/output/index.m3u8" },
+  "channel24": { name: "Channel 24", url: "https://ch24cdn.ncare.live/channel24/ch24office/index.m3u8" },
+  "asian-tv": { name: "Asian TV", url: "https://mtlivestream.com/hls/asian/ytlive/index.m3u8" },
+  "colors-bangla": { name: "Colors Bangla", url: "https://tvsen3.aynaott.com/u3LkNQ7UHhFX/index.m3u8" },
+  "zee-bangla-cinema": { name: "Zee Bangla Cinema", url: "https://smart.bengaldigital.live/Zee-Bangla-Cinema/index.m3u8" },
+  "zee-bangla": { name: "Zee Bangla", url: "http://eb4b8dcf.kablakaka.ru/iptv/WCKQ3HC3UMGVLG/6636/index.m3u8" },
+  "akash8": { name: "Akash 8", url: "https://cdn-4.pishow.tv/live/969/master.m3u8" },
 };
 
 app.use(cors());
