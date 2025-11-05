@@ -17,9 +17,9 @@ const CHANNELS = {
   't-sports': {
     name: 'T Sports',
     manifest:
-      'https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/tsports.stream/playlist.m3u8',
+      'https://smart.bengaldigital.live/sun-bangla-paid/tracks-v1a1/mono.m3u8',
     base:
-      'https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/tsports.stream/',
+      'https://smart.bengaldigital.live/sun-bangla-paid/tracks-v1a1/',
   },
   // ✅ নতুন চ্যানেল এখানে যুক্ত করো
   // 'channel-i': {
