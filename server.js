@@ -3,9 +3,9 @@ const axios = require('axios');
 const cors = require('cors');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// ✅ মাল্টিপল চ্যানেল কনফিগারেশন
+// ✅ চ্যানেল তালিকা (তুমি যে লিংকগুলো দিয়েছো)
 const CHANNELS = {
   "btv": { name: "BTV", url: "https://www.btvlive.gov.bd/live/37f2df30-3edf-42f3-a2ee-6185002c841c/BD/355ba051-9a60-48aa-adcf-5a6c64da8c5c/index.m3u8" },
   "boishakhi-tv": { name: "Boishakhi TV", url: "https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/index.m3u8" },
@@ -31,61 +31,59 @@ const CHANNELS = {
 
 app.use(cors());
 
-/* ------------------------------------------
-   🔹 মেইন ম্যানিফেস্ট (চ্যানেল অনুযায়ী)
----------------------------------------------*/
+// -----------------------------
+// মেইন ম্যানিফেস্ট প্রক্সি রুট
+// -----------------------------
 app.get('/live-tv-proxy', async (req, res) => {
   const channelKey = req.query.channel;
   const channel = CHANNELS[channelKey];
 
-  if (!channel)
-    return res
-      .status(400)
-      .send('❌ অনুগ্রহ করে একটি বৈধ channel প্যারামিটার দিন।');
+  if (!channel) {
+    return res.status(400).send('❌ অনুগ্রহ করে একটি বৈধ channel প্যারামিটার দিন।');
+  }
 
   try {
-    const response = await axios.get(channel.manifest);
+    const response = await axios.get(channel.url);
     let manifestContent = response.data;
 
-    // 🔁 সেগমেন্ট পাথ রিরাইট
+    // সেগমেন্ট URL গুলো প্রক্সি রাউটে রিরাইট করা
     manifestContent = manifestContent.replace(
       /(#EXTINF:.*?\n)([^#\n].*\.(ts|m4s|aac|mp4))/g,
       (match, extinf, segmentPath) =>
-        `${extinf}/live-tv-proxy-segment?channel=${channelKey}&segment=${encodeURIComponent(
-          segmentPath
-        )}`
+        `${extinf}/live-tv-proxy-segment?channel=${channelKey}&segment=${encodeURIComponent(segmentPath)}`
     );
 
-    // 🔁 সাব-ম্যানিফেস্ট (.m3u8) রিরাইট
+    // সাব ম্যানিফেস্ট লিঙ্কও রিরাইট করা
     manifestContent = manifestContent.replace(
       /(^|\n)([^#\n]+\.m3u8)/g,
-      (match, _, subManifestPath) =>
-        `\n/live-tv-proxy-sub?channel=${channelKey}&manifest=${encodeURIComponent(
-          subManifestPath
-        )}`
+      (match, prefix, subManifestPath) =>
+        `${prefix}/live-tv-proxy-sub?channel=${channelKey}&manifest=${encodeURIComponent(subManifestPath)}`
     );
 
     res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.send(manifestContent);
   } catch (error) {
-    console.error('❌ ম্যানিফেস্ট এরর:', error.message);
+    console.error('❌ ম্যানিফেস্ট লোড করতে ব্যর্থ:', error.message);
     res.status(500).send('ম্যানিফেস্ট লোড করতে ব্যর্থ।');
   }
 });
 
-/* ------------------------------------------
-   🔹 সাব ম্যানিফেস্ট
----------------------------------------------*/
+// -----------------------------
+// সাব ম্যানিফেস্ট প্রক্সি রুট
+// -----------------------------
 app.get('/live-tv-proxy-sub', async (req, res) => {
   const { manifest, channel } = req.query;
   const channelInfo = CHANNELS[channel];
-  if (!manifest || !channelInfo)
-    return res.status(400).send('চ্যানেল বা ম্যানিফেস্ট প্যারামিটার অনুপস্থিত।');
 
+  if (!manifest || !channelInfo) {
+    return res.status(400).send('❌ চ্যানেল বা ম্যানিফেস্ট প্যারামিটার অনুপস্থিত।');
+  }
+
+  // আপেক্ষিক URL হলে মূল URL এর সাথে যোগ করা
   const manifestUrl = manifest.startsWith('http')
     ? manifest
-    : channelInfo.base + manifest;
+    : new URL(manifest, channelInfo.url).href;
 
   try {
     const response = await axios.get(manifestUrl);
@@ -94,33 +92,33 @@ app.get('/live-tv-proxy-sub', async (req, res) => {
     manifestContent = manifestContent.replace(
       /(#EXTINF:.*?\n)([^#\n].*\.(ts|m4s|aac|mp4))/g,
       (match, extinf, segmentPath) =>
-        `${extinf}/live-tv-proxy-segment?channel=${channel}&segment=${encodeURIComponent(
-          segmentPath
-        )}`
+        `${extinf}/live-tv-proxy-segment?channel=${channel}&segment=${encodeURIComponent(segmentPath)}`
     );
 
     res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.send(manifestContent);
   } catch (error) {
-    console.error('❌ সাব ম্যানিফেস্ট এরর:', error.message);
-    res.status(500).send('সাব ম্যানিফেস্ট লোড করতে সমস্যা হয়েছে।');
+    console.error('❌ সাব ম্যানিফেস্ট লোড করতে ব্যর্থ:', error.message);
+    res.status(500).send('সাব ম্যানিফেস্ট লোড করতে ব্যর্থ।');
   }
 });
 
-/* ------------------------------------------
-   🔹 সেগমেন্ট হ্যান্ডলিং
----------------------------------------------*/
+// -----------------------------
+// ভিডিও সেগমেন্ট প্রক্সি রুট
+// -----------------------------
 app.get('/live-tv-proxy-segment', async (req, res) => {
   const { segment, channel } = req.query;
   const channelInfo = CHANNELS[channel];
 
-  if (!segment || !channelInfo)
-    return res.status(400).send('চ্যানেল বা সেগমেন্ট অনুপস্থিত।');
+  if (!segment || !channelInfo) {
+    return res.status(400).send('❌ চ্যানেল বা সেগমেন্ট প্যারামিটার অনুপস্থিত।');
+  }
 
+  // সেগমেন্ট URL যদি সম্পূর্ণ না হয় তবে মূল URL এর সাথে যোগ করো
   const segmentUrl = segment.startsWith('http')
     ? segment
-    : channelInfo.base + segment;
+    : new URL(segment, channelInfo.url).href;
 
   try {
     const response = await axios({
@@ -133,16 +131,15 @@ app.get('/live-tv-proxy-segment', async (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Accept-Ranges', 'bytes');
     res.setHeader('Access-Control-Allow-Origin', '*');
+
     response.data.pipe(res);
   } catch (error) {
-    console.error(`❌ সেগমেন্ট এরর (${segmentUrl}):`, error.message);
-    res.status(500).send('ভিডিও সেগমেন্ট লোড ব্যর্থ।');
+    console.error(`❌ ভিডিও সেগমেন্ট লোড করতে ব্যর্থ (${segmentUrl}):`, error.message);
+    res.status(500).send('ভিডিও সেগমেন্ট লোড করতে ব্যর্থ।');
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ মাল্টি-চ্যানেল প্রক্সি চলছে: http://localhost:${PORT}`);
-  console.log(`🔗 ব্যবহার করো যেমন:`);
-  console.log(`👉 Ananda TV: http://localhost:${PORT}/live-tv-proxy?channel=ananda-tv`);
-  console.log(`👉 T Sports: http://localhost:${PORT}/live-tv-proxy?channel=t-sports`);
+  console.log(`✅ মাল্টি-চ্যানেল HLS প্রক্সি সার্ভার চলছে: http://localhost:${PORT}`);
+  console.log(`👉 ব্যবহার করার উদাহরণ: http://localhost:${PORT}/live-tv-proxy?channel=btv`);
 });
