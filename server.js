@@ -34,7 +34,7 @@ const CHANNELS = {
 const SEGMENT_PREFIX_MAP = {
   "1143": "shonggit-bangla",
   "969": "akash8",
-  "Tim3Plus24"; "ttvv",
+  "3"; "ttvv",
   // প্রয়োজনে আরো যোগ করো
 };
 
