@@ -27,7 +27,7 @@ const CHANNELS = {
   "zee-bangla-cinema": { name: "Zee Bangla Cinema", url: "https://smart.bengaldigital.live/Zee-Bangla-Cinema/index.m3u8" },
   "zee-bangla": { name: "Zee Bangla", url: "http://eb4b8dcf.kablakaka.ru/iptv/WCKQ3HC3UMGVLG/6636/index.m3u8" },
   "akash8": { name: "Akash 8", url: "https://cdn-4.pishow.tv/live/969/master.m3u8" },
-  "ttvv": { name: "ttvv", url: "https://cdn.televisionbd.com:8880/live/ttvplus/Tim3Plus24/3.m3u8"},
+  "ttvv": { name: "ttvv", url: "https://cdn.televisionbd.com:8880/live/ttvplus/Tim3Plus24/3.m3u8" },
 };
 
 // Map segment prefix to channel keys for /:segmentName route
