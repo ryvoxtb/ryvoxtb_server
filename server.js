@@ -27,7 +27,7 @@ const CHANNELS = {
   "zee-bangla-cinema": { name: "Zee Bangla Cinema", url: "https://smart.bengaldigital.live/Zee-Bangla-Cinema/index.m3u8" },
   "zee-bangla": { name: "Zee Bangla", url: "http://eb4b8dcf.kablakaka.ru/iptv/WCKQ3HC3UMGVLG/6636/index.m3u8" },
   "akash8": { name: "Akash 8", url: "https://cdn-4.pishow.tv/live/969/master.m3u8" },
-  "channel-i": { name: "Channel i", url: "https://cdn.televisionbd.com:8880/live/ttvplus/Tim3Plus24/3.m3u8" },
+  "channel-i": { name: "Channel i", url: "https%3A%2F%2Fcdn.televisionbd.com%3A8880%2Flive%2Fttvplus%2FTim3Plus24%2F4.m3u8" },
   
   };
 
