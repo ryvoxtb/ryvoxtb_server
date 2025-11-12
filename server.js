@@ -13,7 +13,7 @@ const CHANNELS = {
   "sony-aath": { name: "Sony AATH", url: "https://live20.bozztv.com/giatvplayout7/giatv-209611/tracks-v1a1/mono.ts.m3u8" },
   "ananda-tv": { name: "Ananda TV", url: "https://app24.jagobd.com.bd/c3VydmVyX8RpbEU9Mi8xNy8yMFDDEHGcfRgzQ6NTAgdEoaeFzbF92YWxIZTO0U0ezN1IzMyfvcEdsEfeDeKiNkVN3PTOmdFsaWRtaW51aiPhnPTI2/anandatv.stream/playlist.m3u8" },
   "deepto-tv": { name: "Deepto TV", url: "https://byphdgllyk.gpcdn.net/hls/deeptotv/0_1/index.m3u8?sessId=76637" },
-  "shonggit-bangla": { name: "Shonggit Bangla", url: "https://cdn-4.pishow.tv/live/1143/master.m3u8" },
+  "shonggit": { name: "Shonggit", url: "https://cdn-4.pishow.tv/live/1143/master.m3u8" },
   "sun-bangla": { name: "Sun Bangla", url: "https://smart.bengaldigital.live/sun-bangla-paid/tracks-v1a1/mono.m3u8" },
   "duronto": { name: "Duronto TV", url: "https://tvsen4.aynaott.com/durontotv/tracks-v1a1/mono.ts.m3u8" },
   "enter10-bangla": { name: "Enter10 Bangla", url: "https://live-bangla.akamaized.net/liveabr/playlist.m3u8" },
